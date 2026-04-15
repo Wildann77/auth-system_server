@@ -20,6 +20,16 @@ export class AuthController {
     const result = await authService.login(email, password, otp);
     
     if (result.tokens) {
+      // 1. Set Access Token in Cookie
+      res.cookie('accessToken', result.tokens.accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 15 * 60 * 1000, // 15 minutes
+      });
+
+      // 2. Set Refresh Token in Cookie
       res.cookie('refreshToken', result.tokens.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -75,7 +85,16 @@ export class AuthController {
     const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
     const result = await authService.refreshAccessToken(refreshToken || '');
     
-    // Set new refresh token in cookie
+    // Set Access Token baru di Cookie
+    res.cookie('accessToken', result.accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
+
+    // Set Refresh Token baru di Cookie (Rotation)
     res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -96,13 +115,16 @@ export class AuthController {
     
     await authService.logout(refreshToken || '', allDevices);
     
-    // Clear cookie
-    res.clearCookie('refreshToken', {
+    // Clear both cookies
+    const cookieOptions = {
       path: '/',
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-    });
+      sameSite: 'strict' as const,
+    };
+
+    res.clearCookie('accessToken', cookieOptions);
+    res.clearCookie('refreshToken', cookieOptions);
 
     res.json({ message: 'Logged out successfully' });
   }

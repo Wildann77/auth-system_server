@@ -127,6 +127,15 @@ export class AuthRepository {
   }
 
   /**
+   * Delete refresh token (for rotation)
+   */
+  async deleteRefreshToken(token: string): Promise<void> {
+    await prisma.refreshToken.delete({
+      where: { token },
+    });
+  }
+
+  /**
    * Revoke refresh token
    */
   async revokeRefreshToken(token: string): Promise<void> {
