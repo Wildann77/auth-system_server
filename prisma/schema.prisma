@@ -1,0 +1,113 @@
+// Prisma Schema for Authentication System
+// PostgreSQL (Neon)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===========================================
+// ENUMS
+// ===========================================
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Provider {
+  LOCAL
+  GOOGLE
+}
+
+// ===========================================
+// USER MODEL
+// ===========================================
+
+model User {
+  id               String    @id @default(uuid())
+  email            String    @unique
+  passwordHash     String?   // Nullable for OAuth users
+  firstName        String?
+  lastName         String?
+  role             Role      @default(USER)
+  provider         Provider  @default(LOCAL)
+  isEmailVerified  Boolean   @default(false)
+  twoFactorEnabled Boolean   @default(false)
+  twoFactorSecret  String?
+  tokenVersion     Int       @default(0)
+  lastLoginAt      DateTime?
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Relations
+  emailVerificationToken EmailVerificationToken?
+  passwordResetToken    PasswordResetToken?
+  refreshTokens          RefreshToken[]
+
+  @@index([email])
+  @@index([role])
+}
+
+// ===========================================
+// EMAIL VERIFICATION TOKEN
+// ===========================================
+
+model EmailVerificationToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String   @unique
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([token])
+  @@index([expiresAt])
+}
+
+// ===========================================
+// PASSWORD RESET TOKEN
+// ===========================================
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String   @unique
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([token])
+  @@index([expiresAt])
+}
+
+// ===========================================
+// REFRESH TOKEN
+// ===========================================
+
+model RefreshToken {
+  id           String   @id @default(uuid())
+  token        String   @unique
+  userId       String
+  deviceInfo   String?
+  ipAddress    String?
+  expiresAt    DateTime
+  isRevoked    Boolean  @default(false)
+
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+}
