@@ -214,7 +214,7 @@ export class AuthService {
    * Refresh access token
    */
   async refreshAccessToken(refreshToken: string): Promise<TokenResponse> {
-    // Verify refresh token
+    // 1. Verify JWT signature
     let payload;
     try {
       payload = verifyRefreshToken(refreshToken);
@@ -222,27 +222,49 @@ export class AuthService {
       throw new UnauthorizedError('Invalid refresh token');
     }
 
-    // Check token version (Centralized session invalidation)
-    const user = await userRepository.findByIdWithTokenVersion(payload.userId);
-    if (!user || user.tokenVersion !== payload.tokenVersion) {
-      throw new UnauthorizedError('Session has been invalidated');
+    // 2. Check if token exists in Database and is not revoked
+    const tokenRecord = await authRepository.findRefreshToken(refreshToken);
+    if (!tokenRecord || tokenRecord.isRevoked || isExpired(tokenRecord.expiresAt)) {
+      if (tokenRecord?.isRevoked) {
+        // Security: if revoked token is used, compromise detected, logout all sessions
+        await authRepository.revokeAllUserRefreshTokens(payload.userId);
+        await userRepository.incrementTokenVersion(payload.userId);
+      }
+      throw new UnauthorizedError('Session expired or invalidated');
     }
 
-    // Generate new tokens
-    return this.generateTokens(user.id, user.email, (user.role as any).name || user.role);
+    // 3. Check token version (Centralized session invalidation)
+    const user = await userRepository.findByIdWithTokenVersion(payload.userId);
+    if (!user || user.tokenVersion !== payload.tokenVersion) {
+      throw new UnauthorizedError('Session has been globally invalidated');
+    }
+
+    // 4. Generate new tokens (Rotation strategy)
+    const tokens = await this.generateTokens(user.id, user.email, (user.role as any).name || user.role);
+
+    // 5. Delete old token (Rotating)
+    await authRepository.deleteRefreshToken(refreshToken);
+
+    return tokens;
   }
 
   /**
    * Logout - revoke tokens
    */
   async logout(refreshToken: string, allDevices = false): Promise<void> {
-    const payload = verifyRefreshToken(refreshToken);
-    
-    if (allDevices) {
-      // Invalidate all tokens by incrementing version
-      await userRepository.incrementTokenVersion(payload.userId);
+    try {
+      const payload = verifyRefreshToken(refreshToken);
+      
+      if (allDevices) {
+        await authRepository.revokeAllUserRefreshTokens(payload.userId);
+        await userRepository.incrementTokenVersion(payload.userId);
+      } else {
+        // Logout only this specific session
+        await authRepository.deleteRefreshToken(refreshToken);
+      }
+    } catch (error) {
+       // Ignore error if token is already invalid
     }
-    // Single device logout will be handled by clearing cookie in controller
   }
 
   /**
@@ -324,7 +346,7 @@ export class AuthService {
   }
 
   /**
-   * Generate access and refresh tokens (Stateless)
+   * Generate access and refresh tokens (Database-backed)
    */
   private async generateTokens(
     userId: string,
@@ -345,6 +367,9 @@ export class AuthService {
 
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);
+
+    // BIND TO DATABASE
+    await authRepository.createRefreshToken(userId, refreshToken);
 
     return {
       accessToken,
