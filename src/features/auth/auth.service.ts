@@ -222,48 +222,27 @@ export class AuthService {
       throw new UnauthorizedError('Invalid refresh token');
     }
 
-    // Find token in database
-    const tokenRecord = await authRepository.findRefreshToken(refreshToken);
-
-    if (!tokenRecord) {
-      throw new UnauthorizedError('Refresh token not found');
-    }
-
-    if (tokenRecord.isRevoked) {
-      // Security: revoke all tokens if refresh token is compromised
-      await authRepository.revokeAllUserRefreshTokens(payload.userId);
-      throw new UnauthorizedError('Refresh token has been revoked');
-    }
-
-    if (isExpired(tokenRecord.expiresAt)) {
-      throw new UnauthorizedError('Refresh token has expired');
-    }
-
-    // Check token version
-    const user = await userRepository.findByIdWithTokenVersion(payload.userId);
+    // Check token version (Centralized session invalidation)
+    const user = await userRepository.findByIdWithTokenVersion(payload.id);
     if (!user || user.tokenVersion !== payload.tokenVersion) {
       throw new UnauthorizedError('Session has been invalidated');
     }
 
     // Generate new tokens
-    return this.generateTokens(user.id, user.email, user.role as string);
+    return this.generateTokens(user.id, user.email, (user.role as any).name || user.role);
   }
 
   /**
-   * Logout - revoke refresh token
+   * Logout - revoke tokens
    */
   async logout(refreshToken: string, allDevices = false): Promise<void> {
     const payload = verifyRefreshToken(refreshToken);
     
     if (allDevices) {
-      // Revoke all refresh tokens
-      await authRepository.revokeAllUserRefreshTokens(payload.userId);
-      // Invalidate all access tokens by incrementing version
-      await userRepository.incrementTokenVersion(payload.userId);
-    } else {
-      // Revoke single refresh token
-      await authRepository.revokeRefreshToken(refreshToken);
+      // Invalidate all tokens by incrementing version
+      await userRepository.incrementTokenVersion(payload.id);
     }
+    // Single device logout will be handled by clearing cookie in controller
   }
 
   /**
@@ -345,7 +324,7 @@ export class AuthService {
   }
 
   /**
-   * Generate access and refresh tokens
+   * Generate access and refresh tokens (Stateless)
    */
   private async generateTokens(
     userId: string,
@@ -358,20 +337,14 @@ export class AuthService {
     }
 
     const payload = {
-      userId: user.id,
+      id: user.id,
       email: user.email,
-      role: user.role as string,
+      role: (user.role as any).name || user.role,
       tokenVersion: user.tokenVersion,
     };
 
     const accessToken = generateAccessToken(payload);
-    const refreshToken = generateRefreshToken({
-      ...payload,
-      deviceInfo: undefined,
-    });
-
-    // Save refresh token to database
-    await authRepository.createRefreshToken(userId, refreshToken);
+    const refreshToken = generateRefreshToken(payload);
 
     return {
       accessToken,
