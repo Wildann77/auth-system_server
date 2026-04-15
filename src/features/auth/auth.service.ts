@@ -223,7 +223,7 @@ export class AuthService {
     }
 
     // Check token version (Centralized session invalidation)
-    const user = await userRepository.findByIdWithTokenVersion(payload.id);
+    const user = await userRepository.findByIdWithTokenVersion(payload.userId);
     if (!user || user.tokenVersion !== payload.tokenVersion) {
       throw new UnauthorizedError('Session has been invalidated');
     }
@@ -240,7 +240,7 @@ export class AuthService {
     
     if (allDevices) {
       // Invalidate all tokens by incrementing version
-      await userRepository.incrementTokenVersion(payload.id);
+      await userRepository.incrementTokenVersion(payload.userId);
     }
     // Single device logout will be handled by clearing cookie in controller
   }
@@ -337,7 +337,7 @@ export class AuthService {
     }
 
     const payload = {
-      id: user.id,
+      userId: user.id,
       email: user.email,
       role: (user.role as any).name || user.role,
       tokenVersion: user.tokenVersion,

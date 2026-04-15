@@ -18,6 +18,17 @@ export class AuthController {
   async login(req: Request<{}, {}, LoginInput>, res: Response): Promise<void> {
     const { email, password, otp } = req.body;
     const result = await authService.login(email, password, otp);
+    
+    if (result.tokens) {
+      res.cookie('refreshToken', result.tokens.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+    }
+
     res.json(result);
   }
 
@@ -61,8 +72,18 @@ export class AuthController {
    * Refresh token
    */
   async refreshToken(req: Request<{}, {}, RefreshTokenInput>, res: Response): Promise<void> {
-    const refreshToken = req.body?.refreshToken;
+    const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
     const result = await authService.refreshAccessToken(refreshToken || '');
+    
+    // Set new refresh token in cookie
+    res.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
     res.json(result);
   }
 
@@ -70,9 +91,19 @@ export class AuthController {
    * Logout
    */
   async logout(req: Request<{}, {}, LogoutInput>, res: Response): Promise<void> {
-    const refreshToken = req.body?.refreshToken;
+    const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
     const allDevices = req.body?.allDevices;
+    
     await authService.logout(refreshToken || '', allDevices);
+    
+    // Clear cookie
+    res.clearCookie('refreshToken', {
+      path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+    });
+
     res.json({ message: 'Logged out successfully' });
   }
 
