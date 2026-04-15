@@ -1,21 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
-import { verifyAccessToken, AccessTokenPayload } from '@/lib/jwt';
+import { verifyAccessToken } from '@/lib/jwt';
 import { UnauthorizedError } from './error-handler';
+import { userRepository } from '@/features/user/user.repository';
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: {
-        userId: string;
-        email: string;
-        role: string;
-        tokenVersion: number;
-      };
-    }
-  }
-}
-
-export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
+export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers.authorization;
     const token = authHeader?.startsWith('Bearer ')
@@ -27,15 +15,27 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
     }
 
     const payload = verifyAccessToken(token);
+
+    // BATCH CHECK: Validasi tokenVersion ke Database
+    const user = await userRepository.findByIdWithTokenVersion(payload.userId);
+    
+    if (!user || user.tokenVersion !== payload.tokenVersion) {
+      throw new UnauthorizedError('Session expired or invalidated. Please login again.');
+    }
+
     req.user = {
       userId: payload.userId,
       email: payload.email,
-      role: payload.role,
-      tokenVersion: payload.tokenVersion,
+      role: (user.role as any).name || user.role, // Handle Prisma nested role
+      tokenVersion: user.tokenVersion,
     };
 
     next();
-  } catch {
-    throw new UnauthorizedError('Invalid or expired access token');
+  } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      next(error);
+    } else {
+      next(new UnauthorizedError('Invalid or expired access token'));
+    }
   }
 };
