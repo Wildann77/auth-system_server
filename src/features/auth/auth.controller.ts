@@ -81,7 +81,7 @@ export class AuthController {
    */
   async enable2FA(req: Request<{}, {}, Enable2FAInput>, res: Response): Promise<void> {
     const { password } = req.body;
-    const result = await authService.enable2FA(req.user!.userId, password);
+    const result = await authService.enable2FA(req.user!.id, password);
     res.json(result);
   }
 
@@ -90,7 +90,7 @@ export class AuthController {
    */
   async confirm2FA(req: Request<{}, {}, Verify2FAInput>, res: Response): Promise<void> {
     const { code } = req.body;
-    await authService.confirm2FA(req.user!.userId, code);
+    await authService.confirm2FA(req.user!.id, code);
     res.json({ message: '2FA enabled successfully' });
   }
 
@@ -99,7 +99,7 @@ export class AuthController {
    */
   async disable2FA(req: Request<{}, {}, Disable2FAInput>, res: Response): Promise<void> {
     const { code, password } = req.body;
-    await authService.disable2FA(req.user!.userId, password, code);
+    await authService.disable2FA(req.user!.id, password, code);
     res.json({ message: '2FA disabled successfully' });
   }
 
@@ -108,7 +108,7 @@ export class AuthController {
    */
   async changePassword(req: Request<{}, {}, ChangePasswordInput>, res: Response): Promise<void> {
     const { currentPassword, newPassword } = req.body;
-    await authService.changePassword(req.user!.userId, currentPassword, newPassword);
+    await authService.changePassword(req.user!.id, currentPassword, newPassword);
     res.json({ message: 'Password changed successfully' });
   }
 
@@ -116,7 +116,7 @@ export class AuthController {
    * Get me
    */
   async getMe(req: Request, res: Response): Promise<void> {
-    const user = await authService.getCurrentUser(req.user!.userId);
+    const user = await authService.getCurrentUser(req.user!.id);
     res.json(user);
   }
 }

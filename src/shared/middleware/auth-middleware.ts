@@ -24,7 +24,7 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
     }
 
     req.user = {
-      userId: payload.userId,
+      id: payload.userId,
       email: payload.email,
       role: (user.role as any).name || user.role, // Handle Prisma nested role
       tokenVersion: user.tokenVersion,

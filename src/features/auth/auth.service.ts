@@ -253,12 +253,15 @@ export class AuthService {
    * Logout - revoke refresh token
    */
   async logout(refreshToken: string, allDevices = false): Promise<void> {
+    const payload = verifyRefreshToken(refreshToken);
+    
     if (allDevices) {
       // Revoke all refresh tokens
-      const payload = verifyRefreshToken(refreshToken);
       await authRepository.revokeAllUserRefreshTokens(payload.userId);
+      // Invalidate all access tokens by incrementing version
+      await userRepository.incrementTokenVersion(payload.userId);
     } else {
-      // Revoke single token
+      // Revoke single refresh token
       await authRepository.revokeRefreshToken(refreshToken);
     }
   }
