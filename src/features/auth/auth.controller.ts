@@ -20,16 +20,7 @@ export class AuthController {
     const result = await authService.login(email, password, otp);
     
     if (result.tokens) {
-      // 1. Set Access Token in Cookie
-      res.cookie('accessToken', result.tokens.accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        path: '/',
-        maxAge: 15 * 60 * 1000, // 15 minutes
-      });
-
-      // 2. Set Refresh Token in Cookie
+      // 1. Set Refresh Token in Cookie (Secure & Invisible to JS)
       res.cookie('refreshToken', result.tokens.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -39,7 +30,12 @@ export class AuthController {
       });
     }
 
-    res.json(result);
+    // KIRIM Access Token di JSON Body (Agar bisa dibaca Frontend State)
+    // Refresh Token TIDAK dikirim di sini karena sudah ada di Cookie
+    res.json({
+      user: result.user,
+      accessToken: result.tokens?.accessToken,
+    });
   }
 
   /**
@@ -82,19 +78,11 @@ export class AuthController {
    * Refresh token
    */
   async refreshToken(req: Request<{}, {}, RefreshTokenInput>, res: Response): Promise<void> {
+    // Ambil Refresh Token dari Cookie
     const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
     const result = await authService.refreshAccessToken(refreshToken || '');
     
-    // Set Access Token baru di Cookie
-    res.cookie('accessToken', result.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/',
-      maxAge: 15 * 60 * 1000, // 15 minutes
-    });
-
-    // Set Refresh Token baru di Cookie (Rotation)
+    // Update Refresh Token baru di Cookie (Rotation strategy)
     res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -103,7 +91,10 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
-    res.json(result);
+    // Kirim Access Token BARU di JSON Body
+    res.json({ 
+      accessToken: result.accessToken 
+    });
   }
 
   /**
