@@ -239,11 +239,11 @@ export class AuthService {
       throw new UnauthorizedError('Session has been globally invalidated');
     }
 
-    // 4. Generate new tokens (Rotation strategy)
-    const tokens = await this.generateTokens(user.id, user.email, (user.role as any).name || user.role);
-
-    // 5. Delete old token (Rotating)
+    // 4. Hapus token lama TERLEBIH DAHULU (Rotation strategy)
     await authRepository.deleteRefreshToken(refreshToken);
+
+    // 5. Generate token baru dan simpan ke DB
+    const tokens = await this.generateTokens(user.id, user.email, (user.role as any).name || user.role);
 
     return tokens;
   }
