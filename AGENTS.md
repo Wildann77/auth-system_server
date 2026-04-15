@@ -35,10 +35,10 @@ The project uses `@/` to alias `src/`. All imports must use these paths:
 
 ```
 src/
-├── config/          # env.ts (Zod validation), db.ts (Prisma singleton)
+├── config/          # env.ts (Zod), db.ts (Prisma singleton)
 ├── features/
-│   ├── auth/         # auth.controller, auth.service, auth.repository, auth.schema, auth.types
-│   └── user/         # user.controller, user.service, user.repository, user.schema, user.types
+│   ├── auth/         # routes, controller, service, repository, schema, types
+│   └── user/         # routes, controller, service, repository, schema, types
 ├── lib/              # jwt.ts, password.ts, mail.ts, otp.ts
 └── shared/
     ├── middleware/   # auth-middleware, error-handler, validate-request, etc.
@@ -46,75 +46,45 @@ src/
     └── utils/        # token.ts, date.ts
 ```
 
-## Key Patterns
+## Key Patterns & Security
 
-- **Repository pattern**: Data access isolated in `*.repository.ts`
-- **Service layer**: Business logic in `*.service.ts` 
-- **Zod schemas**: Request validation in `*.schema.ts` files
-- **Prisma singleton**: Use `prisma` from `@/config/db` (prevents connection exhaustion)
-- **Environment validation**: All env vars validated at startup via `env.ts`
+- **Route & Controller Separation**: 
+  - `*.routes.ts`: Defines endpoints and applies middlewares.
+  - `*.controller.ts`: Class-based handlers for request/response logic.
+- **Hybrid Token Strategy**:
+  - `accessToken`: Sent in JSON body, stored in memory by client, used in `Authorization` header.
+  - `refreshToken`: Stored in DB and sent via **HTTP-Only Cookie** (Secure from XSS).
+- **Registration Flow (Secure)**: 
+  - Registration does NOT provide tokens.
+  - Email verification is mandatory via stateless JWT link.
+- **Token Rotation**: Refresh Token is deleted and replaced with a new one upon every refresh request.
+- **Global & Specific Revocation**:
+  - `tokenVersion` in User table acts as a global session kill switch.
+  - Specific sessions can be revoked by deleting the `refreshToken` record in DB.
+- **Prisma Singleton**: Use `prisma` from `@/config/db` only.
 
 ## TypeScript Guidelines
 
-### Schema Organization
-- All Zod schemas are centralized in `*.schema.ts` files within each feature
-- Schema files export both the schema objects and their inferred TypeScript types
-- Use proper ES6 imports instead of `require()` for all dependencies
+### Strict Type Safety
+- Use specific Request generics in controllers: `Request<Params, ResBody, ReqBody, Cookies>`
+- Ensure `req.user` refers to the `AuthenticatedUser` interface from `express.d.ts`.
+- Avoid `any` - use proper Prisma types or inferred Zod types.
 
 ### Schema Validation
-Use Zod schemas with `{ body: z.object({...}) }` structure:
+Centralized Zod schemas in `*.schema.ts` for all request data (body, query, params).
 ```typescript
-export const registerSchema = z.object({
-  body: z.object({
-    email: z.string().email(),
-    password: z.string().min(8),
-  }),
+export const exampleSchema = z.object({
+  body: z.object({ ... }),
+  params: z.object({ ... })
 });
-
-// Export inferred types for use in controllers
-export type RegisterInput = z.infer<typeof registerSchema>['body'];
+export type ExampleInput = z.infer<typeof exampleSchema>['body'];
 ```
-
-### Middleware Usage
-```typescript
-// Validate request with schema
-validateRequest(registerSchema)
-
-// Auth middleware for protected routes
-authMiddleware
-
-// Async handler for route controllers
-asyncHandler(async (req, res) => { ... })
-```
-
-### User Type Handling
-Prisma returns `role` and `provider` as objects `{ name: string }`. Handle appropriately:
-```typescript
-// In services, cast appropriately
-role: user.role as string
-// Or handle both string and object
-const roleValue = typeof user.role === 'string' ? user.role : (user.role as any).name;
-```
-
-### TypeScript Improvements (Latest)
-- **ES6 Imports**: All code now uses proper ES6 imports instead of `require()` calls
-- **Schema Files**: All features now have dedicated `*.schema.ts` files with Zod validation schemas
-- **Type Exports**: Schema files export inferred TypeScript types for better type safety
-- **Type Assertions**: Controllers use proper type assertions for validated request data
-- **Consistent Architecture**: All features follow the same pattern: controller, service, repository, schema, types
-
-## Database
-
-- **Provider**: PostgreSQL (Neon or local via Docker)
-- **Schema**: `prisma/schema.prisma`
-- **Models**: User, EmailVerificationToken, PasswordResetToken, RefreshToken
 
 ## API Routes
 
 ```
 /api/v1/auth/*  - Authentication endpoints (login, register, refresh, 2FA, etc.)
-/api/v1/auth/me - Get current user
-/api/v1/auth/change-password - Change password (authenticated)
+/api/v1/auth/me - Get current user (Based on accessToken cookie/header)
 /api/v1/user/* - User management endpoints
 /health         - Health check
 ```
