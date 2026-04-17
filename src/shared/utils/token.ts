@@ -32,3 +32,9 @@ export const generateNumericToken = (length = 6): string => {
   }
   return result;
 };
+/**
+ * Hash token using SHA-256
+ */
+export const hashToken = (token: string): string => {
+  return crypto.createHash('sha256').update(token).digest('hex');
+};

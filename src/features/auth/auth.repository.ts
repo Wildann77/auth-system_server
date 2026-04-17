@@ -4,8 +4,8 @@
  */
 
 import { prisma } from '@/config/db';
-import { generateToken } from '@/shared/utils/token';
-import { addDays, addHours } from '@/shared/utils/date';
+import { generateToken, hashToken } from '@/shared/utils/token';
+import { addDays, addHours, addMinutes } from '@/shared/utils/date';
 
 export class AuthRepository {
   /**
@@ -61,26 +61,28 @@ export class AuthRepository {
     });
 
     // Generate new token
-    const token = generateToken(32);
-    const expiresAt = addHours(1); // 1 hour
+    const rawToken = generateToken(32);
+    const hashedToken = hashToken(rawToken);
+    const expiresAt = addMinutes(15); // 15 minutes
 
     await prisma.passwordResetToken.create({
       data: {
-        token,
+        token: hashedToken,
         userId,
         expiresAt,
       },
     });
 
-    return token;
+    return rawToken;
   }
 
   /**
    * Find password reset token
    */
   async findPasswordResetToken(token: string) {
+    const hashedToken = hashToken(token);
     return prisma.passwordResetToken.findUnique({
-      where: { token },
+      where: { token: hashedToken },
       include: { user: true },
     });
   }
@@ -89,8 +91,9 @@ export class AuthRepository {
    * Delete password reset token
    */
   async deletePasswordResetToken(token: string): Promise<void> {
+    const hashedToken = hashToken(token);
     await prisma.passwordResetToken.delete({
-      where: { token },
+      where: { token: hashedToken },
     });
   }
 

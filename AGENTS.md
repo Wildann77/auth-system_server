@@ -61,6 +61,10 @@ src/
 - **Global & Specific Revocation**:
   - `tokenVersion` in User table acts as a global session kill switch.
   - Specific sessions can be revoked by deleting the `refreshToken` record in DB.
+- **Secure Password Reset**:
+  - **Hashing**: Reset tokens are hashed with **SHA-256** before being stored in the database. Only the raw token is sent via email.
+  - **Short Expiry**: Tokens expire in **15 minutes**.
+  - **Obfuscation**: Forgot password requests return a success message even if the email is not found to prevent user enumeration.
 - **Prisma Singleton**: Use `prisma` from `@/config/db` only.
 
 ## TypeScript Guidelines
