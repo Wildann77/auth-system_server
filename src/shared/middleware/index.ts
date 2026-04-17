@@ -19,3 +19,4 @@ export {
 } from './error-handler';
 export { asyncHandler } from './async-handler';
 export { authMiddleware } from './auth-middleware';
+export { roleMiddleware } from './role-middleware';
