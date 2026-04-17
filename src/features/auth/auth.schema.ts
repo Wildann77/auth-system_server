@@ -163,6 +163,16 @@ export const disable2FASchema = z.object({
   }),
 });
 
+/**
+ * Google OAuth callback schema
+ */
+export const googleCallbackSchema = z.object({
+  query: z.object({
+    code: z.string().min(1, 'Authorization code is required'),
+    state: z.string().min(1, 'State parameter is required'),
+  }),
+});
+
 // Type exports
 export type RegisterInput = z.infer<typeof registerSchema>['body'];
 export type LoginInput = z.infer<typeof loginSchema>['body'];
@@ -175,3 +185,4 @@ export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>['body'];
 export type LogoutInput = z.infer<typeof logoutSchema>['body'];
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>['body'];
 export type Disable2FAInput = z.infer<typeof disable2FASchema>['body'];
+export type GoogleCallbackInput = z.infer<typeof googleCallbackSchema>['query'];
