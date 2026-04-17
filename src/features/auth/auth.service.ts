@@ -14,6 +14,8 @@ import {
   verifyRefreshToken,
   generateVerificationToken,
   verifyVerificationToken,
+  generateStateToken,
+  verifyStateToken,
 } from '@/lib/jwt';
 import { hashPassword, verifyPassword } from '@/lib/password';
 import { sendVerificationEmail, sendPasswordResetEmail } from '@/lib/mail';
@@ -443,7 +445,7 @@ export class AuthService {
    * Get Google OAuth authorization URL
    */
   getGoogleAuthUrl(): string {
-    const state = generateToken(); // Generate random state for CSRF protection
+    const state = generateStateToken(); // Generate JWT state token for CSRF protection
     const authorizeUrl = this.googleClient.generateAuthUrl({
       access_type: 'offline',
       scope: ['https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/userinfo.profile'],
@@ -456,8 +458,10 @@ export class AuthService {
    * Process Google OAuth callback
    */
   async processGoogleCallback(code: string, state: string): Promise<AuthResponse> {
-    // Verify state parameter (implement proper state verification)
-    // For now, we'll skip detailed state verification and focus on the core OAuth flow
+    // Verify state parameter for CSRF protection
+    if (!verifyStateToken(state)) {
+      throw new BadRequestError('Invalid state parameter');
+    }
 
     try {
       // Exchange authorization code for tokens

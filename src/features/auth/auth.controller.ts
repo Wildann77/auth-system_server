@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { authService } from './auth.service';
-import { RegisterInput, LoginInput, VerifyEmailInput, ForgotPasswordInput, ResetPasswordInput, RefreshTokenInput, LogoutInput, Enable2FAInput, Verify2FAInput, ChangePasswordInput, Disable2FAInput } from './auth.schema';
+import { RegisterInput, LoginInput, VerifyEmailInput, ForgotPasswordInput, ResetPasswordInput, RefreshTokenInput, LogoutInput, Enable2FAInput, Verify2FAInput, ChangePasswordInput, Disable2FAInput, GoogleCallbackInput } from './auth.schema';
 
 export class AuthController {
   /**

@@ -12,6 +12,7 @@ import {
   logoutSchema,
   changePasswordSchema,
   disable2FASchema,
+  googleCallbackSchema,
 } from './auth.schema';
 import { validateRequest } from '@/shared/middleware/validate-request';
 import { asyncHandler } from '@/shared/middleware/async-handler';
@@ -60,6 +61,18 @@ authRouter.post(
   '/refresh-token',
   validateRequest(refreshTokenSchema),
   asyncHandler(authController.refreshToken)
+);
+
+// Google OAuth routes
+authRouter.get(
+  '/google',
+  asyncHandler(authController.googleStart)
+);
+
+authRouter.get(
+  '/google/callback',
+  validateRequest(googleCallbackSchema),
+  asyncHandler(authController.googleCallback)
 );
 
 // Protected routes

@@ -89,3 +89,26 @@ export const decodeToken = (token: string): TokenPayload | null => {
   const decoded = jwt.decode(token);
   return decoded as TokenPayload | null;
 };
+
+/**
+ * Generate OAuth State Token
+ */
+export const generateStateToken = (): string => {
+  return jwt.sign(
+    { type: 'oauth_state', random: Math.random().toString(36) },
+    env.JWT_ACCESS_SECRET,
+    { expiresIn: '10m' } // 10 minutes should be enough for OAuth flow
+  );
+};
+
+/**
+ * Verify OAuth State Token
+ */
+export const verifyStateToken = (token: string): boolean => {
+  try {
+    const payload = jwt.verify(token, env.JWT_ACCESS_SECRET) as any;
+    return payload.type === 'oauth_state';
+  } catch {
+    return false;
+  }
+};
