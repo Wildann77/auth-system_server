@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { authService } from './auth.service';
+import { env } from '@/config/env';
 import { RegisterInput, LoginInput, VerifyEmailInput, ForgotPasswordInput, ResetPasswordInput, RefreshTokenInput, LogoutInput, Enable2FAInput, Verify2FAInput, ChangePasswordInput, Disable2FAInput, GoogleCallbackInput } from './auth.schema';
 
 export class AuthController {
@@ -190,11 +191,8 @@ export class AuthController {
       });
     }
 
-    // Return access token in JSON response
-    res.json({
-      user: result.user,
-      accessToken: result.tokens?.accessToken,
-    });
+    // Redirect to frontend with access token
+    res.redirect(`${env.FRONTEND_URL}/auth-success?token=${result.tokens?.accessToken}`);
   }
 }
 

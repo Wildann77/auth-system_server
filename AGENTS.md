@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Project Overview
-Node.js/TypeScript authentication system using Express, Prisma (PostgreSQL/Neon), JWT, and 2FA. Feature-based architecture.
+Node.js/TypeScript authentication system using Express, Prisma (PostgreSQL/Neon), JWT, 2FA, and Google OAuth. Feature-based architecture.
 
 ## Commands
 
@@ -19,7 +19,7 @@ npm run prisma:migrate   # Run migrations
 
 ## Setup
 
-1. Copy `.env.example` to `.env` and fill in all required variables
+1. Copy `.env.example` to `.env` and fill in all required variables (including Google OAuth credentials)
 2. Start PostgreSQL via `docker compose up -d` (or use Neon cloud)
 3. Run `npm run prisma:generate && npm run prisma:push`
 
@@ -62,6 +62,11 @@ src/
 - **Global & Specific Revocation**:
   - `tokenVersion` in User table acts as a global session kill switch.
   - Specific sessions can be revoked by deleting the `refreshToken` record in DB.
+- **Google OAuth Integration**:
+  - **Auto-Registration**: New Google users are automatically registered with `provider: GOOGLE` and `isEmailVerified: true`.
+  - **Provider Isolation**: Users authenticated via OAuth cannot use password-based login and vice versa.
+  - **State Parameter Protection**: JWT-encoded state parameters prevent CSRF attacks during OAuth flow.
+  - **Secure Redirects**: OAuth flow uses secure redirects with proper state verification.
 - **Secure Password Reset**:
   - **Hashing**: Reset tokens are hashed with **SHA-256** before being stored in the database. Only the raw token is sent via email.
   - **Short Expiry**: Tokens expire in **15 minutes**.
@@ -92,9 +97,11 @@ export type ExampleInput = z.infer<typeof exampleSchema>['body'];
 ## API Routes
 
 ```
-/api/v1/auth/*   - Authentication endpoints (login, register, refresh, 2FA, etc.)
-/api/v1/auth/me  - Get current user (Based on accessToken cookie/header)
-/api/v1/user/me  - Personal user profile management
-/api/v1/admin/*  - Admin management endpoints (requires ADMIN role)
-/health          - Health check
+/api/v1/auth/*           - Authentication endpoints (login, register, refresh, 2FA, etc.)
+/api/v1/auth/google       - Initiate Google OAuth flow (redirect)
+/api/v1/auth/google/callback - Handle Google OAuth callback
+/api/v1/auth/me          - Get current user (Based on accessToken cookie/header)
+/api/v1/user/me          - Personal user profile management
+/api/v1/admin/*          - Admin management endpoints (requires ADMIN role)
+/health                  - Health check
 ```

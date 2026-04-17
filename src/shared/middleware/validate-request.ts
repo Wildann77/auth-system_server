@@ -12,7 +12,7 @@ export const validateRequest = (schema: any) => {
     try {
       if (schema.shape?.body) {
         (req as any).body = schema.shape.body.parse(req.body);
-      } else if (schema.parse) {
+      } else if (!schema.shape?.query && !schema.shape?.params && schema.parse) {
         (req as any).body = schema.parse(req.body);
       }
       
