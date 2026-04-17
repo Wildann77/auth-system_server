@@ -8,7 +8,8 @@ import {
 } from './user.schema';
 import { validateRequest } from '@/shared/middleware/validate-request';
 import { asyncHandler } from '@/shared/middleware/async-handler';
-import { authMiddleware } from '@/shared/middleware/auth-middleware';
+import { authMiddleware, roleMiddleware } from '@/shared/middleware';
+import { Role } from '@prisma/client';
 
 export const userRouter = Router();
 
@@ -16,6 +17,7 @@ userRouter.use(authMiddleware);
 
 userRouter.get(
   '/',
+  roleMiddleware(Role.ADMIN),
   validateRequest(querySchema),
   asyncHandler(userController.getUsers)
 );
@@ -28,6 +30,7 @@ userRouter.get(
 
 userRouter.post(
   '/',
+  roleMiddleware(Role.ADMIN),
   validateRequest(createUserSchema),
   asyncHandler(userController.createUser)
 );
@@ -40,6 +43,7 @@ userRouter.patch(
 
 userRouter.delete(
   '/:id',
+  roleMiddleware(Role.ADMIN),
   validateRequest(userIdSchema),
   asyncHandler(userController.deleteUser)
 );
