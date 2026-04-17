@@ -37,6 +37,7 @@ The project uses `@/` to alias `src/`. All imports must use these paths:
 src/
 ├── config/          # env.ts (Zod), db.ts (Prisma singleton)
 ├── features/
+│   ├── admin/        # routes, controller, service, repository, schema, types
 │   ├── auth/         # routes, controller, service, repository, schema, types
 │   └── user/         # routes, controller, service, repository, schema, types
 ├── lib/              # jwt.ts, password.ts, mail.ts, otp.ts
@@ -65,6 +66,10 @@ src/
   - **Hashing**: Reset tokens are hashed with **SHA-256** before being stored in the database. Only the raw token is sent via email.
   - **Short Expiry**: Tokens expire in **15 minutes**.
   - **Obfuscation**: Forgot password requests return a success message even if the email is not found to prevent user enumeration.
+- **Role-Based Access Control (RBAC)**:
+  - **requireRole Middleware**: Protects admin routes with role checks (403 Forbidden for insufficient permissions).
+  - **Admin Features**: Exclusive endpoints for user management (list, role update, delete) accessible only to ADMIN role.
+  - **User Isolation**: Personal endpoints limited to own profile; no global user management for regular users.
 - **Prisma Singleton**: Use `prisma` from `@/config/db` only.
 
 ## TypeScript Guidelines
@@ -87,8 +92,9 @@ export type ExampleInput = z.infer<typeof exampleSchema>['body'];
 ## API Routes
 
 ```
-/api/v1/auth/*  - Authentication endpoints (login, register, refresh, 2FA, etc.)
-/api/v1/auth/me - Get current user (Based on accessToken cookie/header)
-/api/v1/user/* - User management endpoints
-/health         - Health check
+/api/v1/auth/*   - Authentication endpoints (login, register, refresh, 2FA, etc.)
+/api/v1/auth/me  - Get current user (Based on accessToken cookie/header)
+/api/v1/user/me  - Personal user profile management
+/api/v1/admin/*  - Admin management endpoints (requires ADMIN role)
+/health          - Health check
 ```
