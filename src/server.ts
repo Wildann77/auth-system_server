@@ -5,6 +5,7 @@ import { env, connectDatabase, disconnectDatabase } from '@/config';
 import { errorHandler, requestIdMiddleware, loggerMiddleware, responseHandlerMiddleware } from '@/shared/middleware';
 import { authRouter } from '@/features/auth/index';
 import { userRouter } from '@/features/user/index';
+import { adminRouter } from '@/features/admin/index';
 
 const app = express();
 const PORT = env.PORT;
@@ -20,6 +21,7 @@ app.use(responseHandlerMiddleware);
 
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/user', userRouter);
+app.use('/api/v1/admin', adminRouter);
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
