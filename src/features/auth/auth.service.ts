@@ -461,12 +461,12 @@ export class AuthService {
 
     try {
       // Exchange authorization code for tokens
-      const { tokens } = await this.googleClient.getToken(code);
-      this.googleClient.setCredentials(tokens);
+      const { tokens: googleTokens } = await this.googleClient.getToken(code);
+      this.googleClient.setCredentials(googleTokens);
 
       // Get user info from Google
       const ticket = await this.googleClient.verifyIdToken({
-        idToken: tokens.id_token!,
+        idToken: googleTokens.id_token!,
         audience: env.GOOGLE_CLIENT_ID,
       });
 
@@ -484,16 +484,14 @@ export class AuthService {
         // Auto-register new Google user
         user = await userRepository.create({
           email: email.toLowerCase(),
-          firstName: firstName || null,
-          lastName: lastName || null,
+          firstName: firstName || undefined,
+          lastName: lastName || undefined,
           provider: 'GOOGLE',
-          isEmailVerified: true, // Google emails are pre-verified
-          profilePictureUrl: picture || null,
         });
       } else {
         // Update existing user to ensure email is verified for Google accounts
         if (!user.isEmailVerified) {
-          await userRepository.updateEmailVerified(user.id, true);
+          await userRepository.verifyEmail(user.id);
         }
       }
 
@@ -503,7 +501,7 @@ export class AuthService {
       }
 
       // Generate tokens
-      const tokenResponse = await this.generateTokens(user.id, user.email, user.role);
+      const tokens = await this.generateTokens(user.id, user.email, user.role);
 
       return {
         user: {
@@ -513,9 +511,7 @@ export class AuthService {
           lastName: user.lastName,
           role: user.role,
         },
-        accessToken: tokenResponse.accessToken,
-        refreshToken: tokenResponse.refreshToken,
-        expiresIn: tokenResponse.expiresIn,
+        tokens,
       };
     } catch (error) {
       throw new BadRequestError('Failed to process Google OAuth callback');

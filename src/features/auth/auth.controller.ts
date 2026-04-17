@@ -163,6 +163,39 @@ export class AuthController {
     const user = await authService.getCurrentUser(req.user!.id);
     res.json(user);
   }
+
+  /**
+   * Start Google OAuth flow
+   */
+  async googleStart(req: Request, res: Response): Promise<void> {
+    const authUrl = authService.getGoogleAuthUrl();
+    res.redirect(authUrl);
+  }
+
+  /**
+   * Handle Google OAuth callback
+   */
+  async googleCallback(req: Request<{}, {}, {}, GoogleCallbackInput>, res: Response): Promise<void> {
+    const { code, state } = req.query;
+    const result = await authService.processGoogleCallback(code, state);
+
+    if (result.tokens) {
+      // Set refresh token in HTTP-only cookie
+      res.cookie('refreshToken', result.tokens.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+    }
+
+    // Return access token in JSON response
+    res.json({
+      user: result.user,
+      accessToken: result.tokens?.accessToken,
+    });
+  }
 }
 
 export const authController = new AuthController();
