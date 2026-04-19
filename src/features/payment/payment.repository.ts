@@ -5,6 +5,7 @@ export class PaymentRepository {
   async createOrder(data: {
     userId: string;
     amount: number;
+    orderType?: 'GENERAL' | 'PREMIUM_UPGRADE';
     items?: any;
     snapToken?: string;
     snapUrl?: string;
@@ -14,6 +15,7 @@ export class PaymentRepository {
       data: {
         userId: data.userId,
         amount: new Prisma.Decimal(data.amount),
+        orderType: data.orderType,
         items: data.items,
         snapToken: data.snapToken,
         snapUrl: data.snapUrl,
@@ -33,6 +35,12 @@ export class PaymentRepository {
   async findOrderByExternalId(externalId: string) {
     return prisma.order.findUnique({
       where: { externalId },
+    });
+  }
+
+  async findUserById(id: string) {
+    return prisma.user.findUnique({
+      where: { id },
     });
   }
 

@@ -2,6 +2,7 @@ import Stripe from 'stripe';
 import crypto from 'crypto';
 import { PaymentRepository } from './payment.repository';
 import { OrderStatus } from '@prisma/client';
+import { prisma } from '@/config/db';
 import { snap } from '@/lib/midtrans';
 import { stripe } from '@/lib/stripe';
 import { MidtransWebhookInput } from './payment.schema';
@@ -79,7 +80,6 @@ export class PaymentService {
   }
 
   async handleMidtransWebhook(payload: MidtransWebhookInput) {
-    // ... logic remains same ...
     const { order_id, status_code, gross_amount, signature_key, transaction_status, transaction_id, payment_type } = payload;
     const serverKey = process.env.SERVER_KEY_MIDTRANS || '';
     const hash = crypto.createHash('sha512').update(`${order_id}${status_code}${gross_amount}${serverKey}`).digest('hex');
@@ -89,7 +89,15 @@ export class PaymentService {
     let newStatus: OrderStatus = OrderStatus.PENDING;
     if (transaction_status === 'capture' || transaction_status === 'settlement') newStatus = OrderStatus.SUCCESS;
     else if (transaction_status === 'deny' || transaction_status === 'cancel' || transaction_status === 'expire') newStatus = OrderStatus.FAILED;
-    return this.paymentRepository.updateOrderStatus(order.id, newStatus, transaction_id, payment_type);
+
+    const updatedOrder = await this.paymentRepository.updateOrderStatus(order.id, newStatus, transaction_id, payment_type);
+
+    // Handle premium upgrade
+    if (newStatus === OrderStatus.SUCCESS && order.orderType === 'PREMIUM_UPGRADE') {
+      await this.upgradeUserToPremium(order.userId);
+    }
+
+    return updatedOrder;
   }
 
   async handleStripeWebhook(signature: string, payload: any) {
@@ -114,5 +122,15 @@ export class PaymentService {
        const orderId = session.metadata?.orderId;
        if (orderId) await this.paymentRepository.updateOrderStatus(orderId, OrderStatus.FAILED);
     }
+  }
+
+  private async upgradeUserToPremium(userId: string) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        isPremium: true,
+        tokenVersion: { increment: 1 },
+      },
+    });
   }
 }
