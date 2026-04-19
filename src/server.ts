@@ -6,6 +6,7 @@ import { errorHandler, requestIdMiddleware, loggerMiddleware, responseHandlerMid
 import { authRouter } from '@/features/auth/index';
 import { userRouter } from '@/features/user/index';
 import { adminRouter } from '@/features/admin/index';
+import { paymentRoutes } from '@/features/payment/index';
 
 const app = express();
 const PORT = env.PORT;
@@ -22,6 +23,7 @@ app.use(responseHandlerMiddleware);
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/user', userRouter);
 app.use('/api/v1/admin', adminRouter);
+app.use('/api/v1/payment', paymentRoutes);
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

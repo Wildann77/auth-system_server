@@ -39,8 +39,9 @@ src/
 ├── features/
 │   ├── admin/        # routes, controller, service, repository, schema, types
 │   ├── auth/         # routes, controller, service, repository, schema, types
-│   └── user/         # routes, controller, service, repository, schema, types
-├── lib/              # jwt.ts, password.ts, mail.ts, otp.ts
+│   ├── user/         # routes, controller, service, repository, schema, types
+│   └── payment/      # routes, controller, service, repository, schema, types
+├── lib/              # jwt.ts, password.ts, mail.ts, otp.ts, midtrans.ts/stripe.ts
 └── shared/
     ├── middleware/   # auth-middleware, error-handler, validate-request, etc.
     ├── types/        # Express augmentation, API response types
@@ -76,6 +77,10 @@ src/
   - **Admin Features**: Exclusive endpoints for user management (list, role update, delete) accessible only to ADMIN role.
   - **User Isolation**: Personal endpoints limited to own profile; no global user management for regular users.
 - **Prisma Singleton**: Use `prisma` from `@/config/db` only.
+- **Payment Webhook Security**:
+  - **Signature Verification**: Mandatory validation of webhook payloads using provider-specific signatures (e.g., Midtrans server-key hash or Stripe-Signature header).
+  - **Idempotency Check**: Ensure each transaction is processed exactly once by checking the internal `orderId` status before updating.
+  - **Public Endpoint**: Webhook routes are excluded from standard `requireAuth` middleware but must implement strict origin/signature validation.
 
 ## TypeScript Guidelines
 
@@ -103,5 +108,7 @@ export type ExampleInput = z.infer<typeof exampleSchema>['body'];
 /api/v1/auth/me          - Get current user (Based on accessToken cookie/header)
 /api/v1/user/me          - Personal user profile management
 /api/v1/admin/*          - Admin management endpoints (requires ADMIN role)
+/api/v1/payment/checkout  - Initialize payment (requires AUTH)
+/api/v1/payment/webhook   - Gateway callback (PUBLIC, with signature check)
 /health                  - Health check
 ```
