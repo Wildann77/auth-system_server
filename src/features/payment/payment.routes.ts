@@ -19,11 +19,17 @@ router.post(
   controller.initializePayment
 );
 
-// Webhook - Public
+// Webhook - Midtrans
 router.post(
   '/webhook',
   validateRequest(midtransWebhookSchema),
   controller.handleWebhook
+);
+
+// Webhook - Stripe
+router.post(
+  '/webhook-stripe',
+  controller.handleStripeWebhook
 );
 
 export default router;

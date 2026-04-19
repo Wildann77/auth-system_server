@@ -8,6 +8,7 @@ export class PaymentRepository {
     items?: any;
     snapToken?: string;
     snapUrl?: string;
+    paymentIntentId?: string;
   }) {
     return prisma.order.create({
       data: {
@@ -16,6 +17,7 @@ export class PaymentRepository {
         items: data.items,
         snapToken: data.snapToken,
         snapUrl: data.snapUrl,
+        paymentIntentId: data.paymentIntentId,
         status: OrderStatus.PENDING,
       },
     });
@@ -40,7 +42,8 @@ export class PaymentRepository {
     externalId?: string, 
     paymentType?: string,
     snapToken?: string,
-    snapUrl?: string
+    snapUrl?: string,
+    paymentIntentId?: string
   ) {
     return prisma.order.update({
       where: { id },
@@ -50,6 +53,7 @@ export class PaymentRepository {
         paymentType,
         snapToken,
         snapUrl,
+        paymentIntentId,
       },
     });
   }

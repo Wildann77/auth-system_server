@@ -9,10 +9,10 @@ export class PaymentController {
     req: Request<{}, {}, CheckoutInput>,
     res: Response
   ) => {
-    const { amount, items } = req.body;
+    const { amount, provider, items } = req.body;
     const userId = req.user!.id;
 
-    const session = await this.paymentService.createPaymentSession(userId, amount, items);
+    const session = await this.paymentService.createPaymentSession(userId, amount, provider, items);
 
     return res.status(200).json({
       status: 'success',
@@ -30,5 +30,12 @@ export class PaymentController {
       status: 'success',
       message: 'OK'
     });
+  };
+
+  handleStripeWebhook = async (req: Request, res: Response) => {
+    const sig = req.headers['stripe-signature'] as string;
+    await this.paymentService.handleStripeWebhook(sig, req.body);
+
+    return res.status(200).json({ received: true });
   };
 }

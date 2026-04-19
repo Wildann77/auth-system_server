@@ -3,6 +3,7 @@ import { z } from 'zod';
 export const checkoutSchema = z.object({
   body: z.object({
     amount: z.number().positive('Amount must be positive'),
+    provider: z.enum(['midtrans', 'stripe']).default('midtrans'),
     items: z.array(z.object({
       id: z.string(),
       name: z.string(),
