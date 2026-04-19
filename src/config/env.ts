@@ -43,7 +43,13 @@ const envSchema = z.object({
 const parseResult = envSchema.safeParse(process.env);
 
 if (!parseResult.success) {
-  console.error('❌ Invalid environment variables:', parseResult.error.flatten().fieldErrors);
+  const errorEntry = {
+    timestamp: new Date().toISOString(),
+    level: 'ERROR',
+    message: 'Invalid environment configuration',
+    errors: parseResult.error.flatten().fieldErrors,
+  };
+  console.error(JSON.stringify(errorEntry));
   throw new Error('Invalid environment configuration');
 }
 

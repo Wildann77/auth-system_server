@@ -58,6 +58,14 @@ export class ConflictError extends AppError {
   }
 }
 
+export class TooManyRequestsError extends AppError {
+  constructor(message = 'Too Many Requests') {
+    super(message, 429, 'TOO_MANY_REQUESTS');
+  }
+}
+
+import { logger } from '@/shared/utils/logger';
+
 /**
  * Global error handler middleware
  */
@@ -69,9 +77,8 @@ export const errorHandler = (
   _next: NextFunction
 ): void => {
   // Log error
-  console.error('[ERROR]', {
+  logger.error(err.message, {
     requestId: req.requestId,
-    error: err.message,
     stack: isProduction ? undefined : err.stack,
   });
 

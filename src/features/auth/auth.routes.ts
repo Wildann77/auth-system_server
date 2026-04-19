@@ -17,18 +17,21 @@ import {
 import { validateRequest } from '@/shared/middleware/validate-request';
 import { asyncHandler } from '@/shared/middleware/async-handler';
 import { authMiddleware } from '@/shared/middleware/auth-middleware';
+import { authLimiter } from '@/shared/middleware/rate-limit';
 
 export const authRouter = Router();
 
 // Public routes
 authRouter.post(
   '/register',
+  authLimiter,
   validateRequest(registerSchema),
   asyncHandler(authController.register)
 );
 
 authRouter.post(
   '/login',
+  authLimiter,
   validateRequest(loginSchema),
   asyncHandler(authController.login)
 );
@@ -41,18 +44,21 @@ authRouter.post(
 
 authRouter.post(
   '/resend-verification',
+  authLimiter,
   validateRequest(forgotPasswordSchema),
   asyncHandler(authController.resendVerification)
 );
 
 authRouter.post(
   '/forgot-password',
+  authLimiter,
   validateRequest(forgotPasswordSchema),
   asyncHandler(authController.forgotPassword)
 );
 
 authRouter.post(
   '/reset-password',
+  authLimiter,
   validateRequest(resetPasswordSchema),
   asyncHandler(authController.resetPassword)
 );

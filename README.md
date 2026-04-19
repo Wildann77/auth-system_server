@@ -138,6 +138,49 @@ npm run lint
 ### Health Check
 - `GET /health` - Application health check
 
+## API Response Format
+
+All API endpoints return responses in a standardized JSON format:
+
+### Success Response
+```json
+{
+  "success": true,
+  "message": "Operation completed successfully",
+  "data": { ... },
+  "error": null
+}
+```
+
+### Error Response
+```json
+{
+  "success": false,
+  "message": "Error description",
+  "data": null,
+  "error": {
+    "code": "ERROR_CODE"
+  }
+}
+```
+
+### Paginated Response
+For endpoints that return lists of items, the `data` field contains pagination metadata:
+```json
+{
+  "success": true,
+  "message": "Items retrieved successfully",
+  "data": {
+    "items": [ ... ],
+    "total": 100,
+    "page": 1,
+    "limit": 10,
+    "totalPages": 10
+  },
+  "error": null
+}
+```
+
 ## Project Structure
 
 ```

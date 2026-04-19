@@ -6,7 +6,7 @@
 import { userRepository } from './user.repository';
 import { CreateUserInput, UpdateUserInput, UserResponse, UserFilters } from './user.types';
 import { hashPassword } from '@/lib/password';
-import { AppError } from '@/shared/middleware/error-handler';
+import { NotFoundError, ConflictError } from '@/shared/middleware/error-handler';
 import { Role, Provider } from '@prisma/client';
 
 export class UserService {
@@ -17,7 +17,7 @@ export class UserService {
     // Check if email already exists
     const emailExists = await userRepository.emailExists(data.email);
     if (emailExists) {
-      throw new AppError('Email already registered', 409, 'EMAIL_EXISTS');
+      throw new ConflictError('Email already registered');
     }
 
     // Hash password if provided
@@ -40,7 +40,7 @@ export class UserService {
   async getUserById(id: string): Promise<UserResponse> {
     const user = await userRepository.findById(id);
     if (!user) {
-      throw new AppError('User not found', 404, 'USER_NOT_FOUND');
+      throw new NotFoundError('User not found');
     }
     return this.toUserResponse(user);
   }

@@ -1,17 +1,54 @@
-import { ContentRepository } from './content.repository';
+import { contentRepository } from './content.repository';
+import { NotFoundError } from '@/shared/middleware/error-handler';
 
 export class ContentService {
-  constructor(private contentRepository: ContentRepository) {}
-
   async getExclusiveContent() {
-    // This is premium-only content
+    // Fetch premium content from database
+    const premiumContent = await contentRepository.findPremiumContent();
+
     return {
       message: 'Welcome to premium exclusive content!',
-      features: [
-        'Advanced analytics',
-        'Priority support',
-        'Exclusive tutorials'
-      ]
+      content: premiumContent,
     };
   }
+
+  async createContent(data: any) {
+    return contentRepository.create(data);
+  }
+
+  async getAllContent() {
+    return contentRepository.findAll();
+  }
+
+  async getContentById(id: string) {
+    const content = await contentRepository.findById(id);
+    if (!content) {
+      throw new NotFoundError('Content not found');
+    }
+    return content;
+  }
+
+  async updateContent(id: string, data: any) {
+    try {
+      return await contentRepository.update(id, data);
+    } catch (error: any) {
+      if (error.code === 'P2025') {
+        throw new NotFoundError('Content not found for update');
+      }
+      throw error;
+    }
+  }
+
+  async deleteContent(id: string) {
+    try {
+      await contentRepository.delete(id);
+    } catch (error: any) {
+      if (error.code === 'P2025') {
+        throw new NotFoundError('Content not found for deletion');
+      }
+      throw error;
+    }
+  }
 }
+
+export const contentService = new ContentService();

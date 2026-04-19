@@ -4,15 +4,16 @@
  */
 
 import { prisma } from '@/config/db';
+import { Prisma, Role, Provider } from '@prisma/client';
 import { CreateUserInput, UpdateUserInput, UserFilters } from './user.types';
-import { Role, Provider } from '@prisma/client';
 
 export class UserRepository {
   /**
    * Find user by ID
    */
-  async findById(id: string) {
-    return prisma.user.findUnique({
+  async findById(id: string, tx?: Prisma.TransactionClient) {
+    const db = tx || prisma;
+    return db.user.findUnique({
       where: { id },
     });
   }
@@ -20,8 +21,9 @@ export class UserRepository {
   /**
    * Find user by email
    */
-  async findByEmail(email: string) {
-    return prisma.user.findUnique({
+  async findByEmail(email: string, tx?: Prisma.TransactionClient) {
+    const db = tx || prisma;
+    return db.user.findUnique({
       where: { email: email.toLowerCase() },
     });
   }
@@ -29,8 +31,9 @@ export class UserRepository {
   /**
    * Find user by ID with token version
    */
-  async findByIdWithTokenVersion(id: string) {
-    return prisma.user.findUnique({
+  async findByIdWithTokenVersion(id: string, tx?: Prisma.TransactionClient) {
+    const db = tx || prisma;
+    return db.user.findUnique({
       where: { id },
       select: {
         id: true,
@@ -45,8 +48,9 @@ export class UserRepository {
   /**
    * Create new user
    */
-  async create(data: CreateUserInput) {
-    return prisma.user.create({
+  async create(data: CreateUserInput, tx?: Prisma.TransactionClient) {
+    const db = tx || prisma;
+    return db.user.create({
       data: {
         ...data,
         email: data.email.toLowerCase(),
@@ -57,8 +61,9 @@ export class UserRepository {
   /**
    * Update user
    */
-  async update(id: string, data: UpdateUserInput) {
-    return prisma.user.update({
+  async update(id: string, data: UpdateUserInput, tx?: Prisma.TransactionClient) {
+    const db = tx || prisma;
+    return db.user.update({
       where: { id },
       data,
     });
@@ -67,8 +72,9 @@ export class UserRepository {
   /**
    * Update user token version (for logout)
    */
-  async incrementTokenVersion(id: string) {
-    return prisma.user.update({
+  async incrementTokenVersion(id: string, tx?: Prisma.TransactionClient) {
+    const db = tx || prisma;
+    return db.user.update({
       where: { id },
       data: {
         tokenVersion: { increment: 1 },
@@ -79,8 +85,9 @@ export class UserRepository {
   /**
    * Update user password
    */
-  async updatePassword(id: string, passwordHash: string) {
-    return prisma.user.update({
+  async updatePassword(id: string, passwordHash: string, tx?: Prisma.TransactionClient) {
+    const db = tx || prisma;
+    return db.user.update({
       where: { id },
       data: {
         passwordHash,
@@ -92,8 +99,9 @@ export class UserRepository {
   /**
    * Verify user email
    */
-  async verifyEmail(id: string) {
-    return prisma.user.update({
+  async verifyEmail(id: string, tx?: Prisma.TransactionClient) {
+    const db = tx || prisma;
+    return db.user.update({
       where: { id },
       data: {
         isEmailVerified: true,
@@ -104,8 +112,9 @@ export class UserRepository {
   /**
    * Enable 2FA
    */
-  async enableTwoFactor(id: string, secret: string) {
-    return prisma.user.update({
+  async enableTwoFactor(id: string, secret: string, tx?: Prisma.TransactionClient) {
+    const db = tx || prisma;
+    return db.user.update({
       where: { id },
       data: {
         twoFactorEnabled: true,
@@ -117,8 +126,9 @@ export class UserRepository {
   /**
    * Disable 2FA
    */
-  async disableTwoFactor(id: string) {
-    return prisma.user.update({
+  async disableTwoFactor(id: string, tx?: Prisma.TransactionClient) {
+    const db = tx || prisma;
+    return db.user.update({
       where: { id },
       data: {
         twoFactorEnabled: false,
@@ -130,8 +140,9 @@ export class UserRepository {
   /**
    * Update last login
    */
-  async updateLastLogin(id: string) {
-    return prisma.user.update({
+  async updateLastLogin(id: string, tx?: Prisma.TransactionClient) {
+    const db = tx || prisma;
+    return db.user.update({
       where: { id },
       data: {
         lastLoginAt: new Date(),
@@ -142,8 +153,9 @@ export class UserRepository {
   /**
    * Delete user
    */
-  async delete(id: string) {
-    return prisma.user.delete({
+  async delete(id: string, tx?: Prisma.TransactionClient) {
+    const db = tx || prisma;
+    return db.user.delete({
       where: { id },
     });
   }

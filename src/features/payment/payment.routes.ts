@@ -1,35 +1,31 @@
 import { Router } from 'express';
-import { PaymentController } from './payment.controller';
-import { PaymentService } from './payment.service';
-import { PaymentRepository } from './payment.repository';
+import { paymentController } from './payment.controller';
 import { authMiddleware } from '@/shared/middleware/auth-middleware';
 import { validateRequest } from '@/shared/middleware/validate-request';
+import { asyncHandler } from '@/shared/middleware/async-handler';
+import { paymentLimiter } from '@/shared/middleware/rate-limit';
 import { checkoutSchema, midtransWebhookSchema } from './payment.schema';
 
-const router = Router();
-const repository = new PaymentRepository();
-const service = new PaymentService(repository);
-const controller = new PaymentController(service);
+export const paymentRouter = Router();
 
 // Checkout - Protected
-router.post(
+paymentRouter.post(
   '/checkout',
   authMiddleware,
+  paymentLimiter,
   validateRequest(checkoutSchema),
-  controller.initializePayment
+  asyncHandler(paymentController.initializePayment)
 );
 
 // Webhook - Midtrans
-router.post(
+paymentRouter.post(
   '/webhook',
   validateRequest(midtransWebhookSchema),
-  controller.handleWebhook
+  asyncHandler(paymentController.handleWebhook)
 );
 
 // Webhook - Stripe
-router.post(
+paymentRouter.post(
   '/webhook-stripe',
-  controller.handleStripeWebhook
+  asyncHandler(paymentController.handleStripeWebhook)
 );
-
-export default router;

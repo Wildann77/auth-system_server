@@ -8,7 +8,7 @@ export class UserController {
    */
   async getMe(req: Request, res: Response): Promise<void> {
     const user = await userService.getUserById(req.user!.id);
-    res.json(user);
+    res.apiSuccess(user, 'Profile retrieved successfully');
   }
 
   /**
@@ -16,7 +16,7 @@ export class UserController {
    */
   async updateMe(req: Request<{}, {}, UpdateUserInput>, res: Response): Promise<void> {
     const user = await userService.updateUser(req.user!.id, req.body);
-    res.json(user);
+    res.apiSuccess(user, 'Profile updated successfully');
   }
 }
 

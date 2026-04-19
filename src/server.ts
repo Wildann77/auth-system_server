@@ -2,12 +2,14 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { env, connectDatabase, disconnectDatabase } from '@/config';
+import { logger } from '@/shared/utils/logger';
 import { errorHandler, requestIdMiddleware, loggerMiddleware, responseHandlerMiddleware } from '@/shared/middleware';
+import { globalLimiter } from '@/shared/middleware/rate-limit';
 import { authRouter } from '@/features/auth/index';
 import { userRouter } from '@/features/user/index';
 import { adminRouter } from '@/features/admin/index';
-import { paymentRoutes } from '@/features/payment/index';
-import { contentRoutes } from '@/features/content/index';
+import { paymentRouter } from '@/features/payment/index';
+import { contentRouter } from '@/features/content/index';
 
 const app = express();
 const PORT = env.PORT;
@@ -21,11 +23,14 @@ app.use(cookieParser());
 
 app.use(responseHandlerMiddleware);
 
+// Global rate limiting for all API routes
+app.use('/api/v1', globalLimiter);
+
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/user', userRouter);
 app.use('/api/v1/admin', adminRouter);
-app.use('/api/v1/payment', paymentRoutes);
-app.use('/api/v1/content', contentRoutes);
+app.use('/api/v1/payment', paymentRouter);
+app.use('/api/v1/content', contentRouter);
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -37,17 +42,17 @@ const startServer = async () => {
   try {
     await connectDatabase();
     app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📚 Health check: http://localhost:${PORT}/health`);
+      logger.info(`Server running on port ${PORT}`);
+      logger.info(`Health check: http://localhost:${PORT}/health`);
     });
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    logger.error('Failed to start server', { error: (error as Error).message });
     process.exit(1);
   }
 };
 
 const shutdown = async () => {
-  console.log('🛑 Shutting down server...');
+  logger.info('Shutting down server...');
   await disconnectDatabase();
   process.exit(0);
 };

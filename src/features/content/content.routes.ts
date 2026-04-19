@@ -1,21 +1,18 @@
 import { Router } from 'express';
-import { ContentController } from './content.controller';
-import { ContentService } from './content.service';
-import { ContentRepository } from './content.repository';
+import { contentController } from './content.controller';
 import { authMiddleware } from '@/shared/middleware/auth-middleware';
 import { requirePremium } from '@/shared/middleware/premium-middleware';
+import { asyncHandler } from '@/shared/middleware/async-handler';
+import { validateRequest } from '@/shared/middleware/validate-request';
+import { getExclusiveContentSchema } from './content.schema';
 
-const router = Router();
-const repository = new ContentRepository();
-const service = new ContentService(repository);
-const controller = new ContentController(service);
+export const contentRouter = Router();
 
 // Premium-only endpoint
-router.get(
+contentRouter.get(
   '/exclusive',
   authMiddleware,
   requirePremium,
-  controller.getExclusiveContent
+  validateRequest(getExclusiveContentSchema),
+  asyncHandler(contentController.getExclusiveContent)
 );
-
-export default router;

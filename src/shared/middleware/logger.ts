@@ -1,25 +1,10 @@
 /**
  * Logger Middleware
- * Structured logging for all HTTP requests
+ * Structured logging for all HTTP requests using global logger utility
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { isDevelopment } from '@/config/env';
-
-/**
- * Format log entry as JSON
- */
-const formatLogEntry = (req: Request, res: Response, duration: number) => ({
-  timestamp: new Date().toISOString(),
-  requestId: req.requestId,
-  method: req.method,
-  path: req.path,
-  statusCode: res.statusCode,
-  duration: `${duration}ms`,
-  ip: req.ip || req.connection.remoteAddress,
-  userAgent: req.get('user-agent'),
-  userId: req.user?.id,
-});
+import { logger } from '@/shared/utils/logger';
 
 /**
  * Logger middleware
@@ -34,16 +19,23 @@ export const loggerMiddleware = (
   // Log on response finish
   res.on('finish', () => {
     const duration = Date.now() - startTime;
-    const logEntry = formatLogEntry(req, res, duration);
+    const logContext = {
+      requestId: req.requestId,
+      method: req.method,
+      path: req.path,
+      statusCode: res.statusCode,
+      duration: `${duration}ms`,
+      ip: req.ip || req.connection.remoteAddress,
+      userAgent: req.get('user-agent'),
+      userId: req.user?.id,
+    };
 
     if (res.statusCode >= 500) {
-      console.error('[ERROR]', JSON.stringify(logEntry));
+      logger.error(`HTTP ${req.method} ${req.path}`, logContext);
     } else if (res.statusCode >= 400) {
-      console.warn('[WARN]', JSON.stringify(logEntry));
+      logger.warn(`HTTP ${req.method} ${req.path}`, logContext);
     } else {
-      if (isDevelopment) {
-        console.log('[INFO]', JSON.stringify(logEntry));
-      }
+      logger.info(`HTTP ${req.method} ${req.path}`, logContext);
     }
   });
 

@@ -4,6 +4,7 @@
  */
 
 import { prisma } from '@/config/db';
+import { Prisma } from '@prisma/client';
 import { authRepository } from './auth.repository';
 import { userRepository } from '@/features/user/user.repository';
 import { OAuth2Client } from 'google-auth-library';
@@ -193,29 +194,31 @@ export class AuthService {
    * Reset password with token
    */
   async resetPassword(token: string, password: string): Promise<void> {
-    const tokenRecord = await authRepository.findPasswordResetToken(token);
+    return prisma.$transaction(async (tx) => {
+      const tokenRecord = await authRepository.findPasswordResetToken(token, tx);
 
-    if (!tokenRecord) {
-      throw new BadRequestError('Invalid reset token');
-    }
+      if (!tokenRecord) {
+        throw new BadRequestError('Invalid reset token');
+      }
 
-    if (isExpired(tokenRecord.expiresAt)) {
-      throw new BadRequestError('Reset token has expired');
-    }
+      if (isExpired(tokenRecord.expiresAt)) {
+        throw new BadRequestError('Reset token has expired');
+      }
 
-    if (!tokenRecord.user) {
-      throw new NotFoundError('User not found');
-    }
+      if (!tokenRecord.user) {
+        throw new NotFoundError('User not found');
+      }
 
-    // Hash new password
-    const passwordHash = await hashPassword(password);
+      // Hash new password
+      const passwordHash = await hashPassword(password);
 
-    // Update password and increment token version
-    await userRepository.updatePassword(tokenRecord.user.id, passwordHash);
+      // Update password and increment token version
+      await userRepository.updatePassword(tokenRecord.user.id, passwordHash, tx);
 
-    // Delete used token and all refresh tokens
-    await authRepository.deletePasswordResetToken(token);
-    await authRepository.revokeAllUserRefreshTokens(tokenRecord.user.id);
+      // Delete used token and all refresh tokens
+      await authRepository.deletePasswordResetToken(token, tx);
+      await authRepository.revokeAllUserRefreshTokens(tokenRecord.user.id, tx);
+    });
   }
 
   /**
@@ -235,8 +238,10 @@ export class AuthService {
     if (!tokenRecord || tokenRecord.isRevoked || isExpired(tokenRecord.expiresAt)) {
       if (tokenRecord?.isRevoked) {
         // Security: if revoked token is used, compromise detected, logout all sessions
-        await authRepository.revokeAllUserRefreshTokens(payload.userId);
-        await userRepository.incrementTokenVersion(payload.userId);
+        await prisma.$transaction(async (tx) => {
+          await authRepository.revokeAllUserRefreshTokens(payload.userId, tx);
+          await userRepository.incrementTokenVersion(payload.userId, tx);
+        });
       }
       throw new UnauthorizedError('Session expired or invalidated');
     }
@@ -247,13 +252,13 @@ export class AuthService {
       throw new UnauthorizedError('Session has been globally invalidated');
     }
 
-    // 4. Hapus token lama TERLEBIH DAHULU (Rotation strategy)
-    await authRepository.deleteRefreshToken(refreshToken);
-
-    // 5. Generate token baru dan simpan ke DB
-    const tokens = await this.generateTokens(user.id, user.email, (user.role as any).name || user.role);
-
-    return tokens;
+    // 4. Hapus token lama dan generate token baru atomically (Rotation strategy)
+    return prisma.$transaction(async (tx) => {
+      await authRepository.deleteRefreshToken(refreshToken, tx);
+      const userWithRole = await userRepository.findByIdWithTokenVersion(user.id, tx);
+      const tokens = await this.generateTokens(user.id, user.email, (userWithRole?.role as any).name || userWithRole?.role, tx);
+      return tokens;
+    });
   }
 
   /**
@@ -264,8 +269,10 @@ export class AuthService {
       const payload = verifyRefreshToken(refreshToken);
       
       if (allDevices) {
-        await authRepository.revokeAllUserRefreshTokens(payload.userId);
-        await userRepository.incrementTokenVersion(payload.userId);
+        await prisma.$transaction(async (tx) => {
+          await authRepository.revokeAllUserRefreshTokens(payload.userId, tx);
+          await userRepository.incrementTokenVersion(payload.userId, tx);
+        });
       } else {
         // Logout only this specific session
         await authRepository.deleteRefreshToken(refreshToken);
@@ -359,9 +366,10 @@ export class AuthService {
   private async generateTokens(
     userId: string,
     email: string,
-    role: string
+    role: string,
+    tx?: Prisma.TransactionClient
   ): Promise<TokenResponse> {
-    const user = await userRepository.findByIdWithTokenVersion(userId);
+    const user = await userRepository.findByIdWithTokenVersion(userId, tx);
     if (!user) {
       throw new NotFoundError('User not found');
     }
@@ -378,7 +386,7 @@ export class AuthService {
     const refreshToken = generateRefreshToken(payload);
 
     // BIND TO DATABASE
-    await authRepository.createRefreshToken(userId, refreshToken);
+    await authRepository.createRefreshToken(userId, refreshToken, undefined, undefined, tx);
 
     return {
       accessToken,
@@ -391,26 +399,28 @@ export class AuthService {
    * Change password (authenticated)
    */
   async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
-    const user = await userRepository.findById(userId);
+    return prisma.$transaction(async (tx) => {
+      const user = await userRepository.findById(userId, tx);
 
-    if (!user) {
-      throw new NotFoundError('User not found');
-    }
+      if (!user) {
+        throw new NotFoundError('User not found');
+      }
 
-    // Verify current password
-    const isValidPassword = await verifyPassword(currentPassword, user.passwordHash || '');
-    if (!isValidPassword) {
-      throw new UnauthorizedError('Current password is incorrect');
-    }
+      // Verify current password
+      const isValidPassword = await verifyPassword(currentPassword, user.passwordHash || '');
+      if (!isValidPassword) {
+        throw new UnauthorizedError('Current password is incorrect');
+      }
 
-    // Hash new password
-    const passwordHash = await hashPassword(newPassword);
+      // Hash new password
+      const passwordHash = await hashPassword(newPassword);
 
-    // Update password and increment token version
-    await userRepository.updatePassword(userId, passwordHash);
+      // Update password and increment token version
+      await userRepository.updatePassword(userId, passwordHash, tx);
 
-    // Revoke all refresh tokens
-    await authRepository.revokeAllUserRefreshTokens(userId);
+      // Revoke all refresh tokens
+      await authRepository.revokeAllUserRefreshTokens(userId, tx);
+    });
   }
 
   /**

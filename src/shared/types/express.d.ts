@@ -14,8 +14,8 @@ declare global {
     }
 
     interface Response {
-      apiSuccess?: <T>(data: T, message?: string) => void;
-      apiError?: (message: string, code?: string) => void;
+      apiSuccess: <T>(data: T, message?: string) => void;
+      apiError: (message: string, code?: string) => void;
     }
   }
 }

@@ -6,6 +6,7 @@
 import { authenticator } from 'otplib';
 import QRCode from 'qrcode';
 import { env } from '@/config/env';
+import { logger } from '@/shared/utils/logger';
 
 // Configure authenticator
 authenticator.options = {
@@ -42,7 +43,7 @@ export const generateQRCodeDataUrl = async (otpauthUrl: string): Promise<string>
     });
     return dataUrl;
   } catch (error) {
-    console.error('Failed to generate QR code:', error);
+    logger.error('Failed to generate QR code', { error: (error as Error).message });
     throw new Error('Failed to generate QR code');
   }
 };

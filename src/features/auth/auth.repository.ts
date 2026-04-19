@@ -4,6 +4,7 @@
  */
 
 import { prisma } from '@/config/db';
+import { Prisma } from '@prisma/client';
 import { generateToken, hashToken } from '@/shared/utils/token';
 import { addDays, addHours, addMinutes } from '@/shared/utils/date';
 
@@ -11,9 +12,10 @@ export class AuthRepository {
   /**
    * Create email verification token
    */
-  async createEmailVerificationToken(userId: string): Promise<string> {
+  async createEmailVerificationToken(userId: string, tx?: Prisma.TransactionClient): Promise<string> {
+    const db = tx || prisma;
     // Delete any existing tokens
-    await prisma.emailVerificationToken.deleteMany({
+    await db.emailVerificationToken.deleteMany({
       where: { userId },
     });
 
@@ -21,7 +23,7 @@ export class AuthRepository {
     const token = generateToken(32);
     const expiresAt = addDays(1); // 24 hours
 
-    await prisma.emailVerificationToken.create({
+    await db.emailVerificationToken.create({
       data: {
         token,
         userId,
@@ -35,8 +37,9 @@ export class AuthRepository {
   /**
    * Find email verification token
    */
-  async findEmailVerificationToken(token: string) {
-    return prisma.emailVerificationToken.findUnique({
+  async findEmailVerificationToken(token: string, tx?: Prisma.TransactionClient) {
+    const db = tx || prisma;
+    return db.emailVerificationToken.findUnique({
       where: { token },
       include: { user: true },
     });
@@ -45,8 +48,9 @@ export class AuthRepository {
   /**
    * Delete email verification token
    */
-  async deleteEmailVerificationToken(token: string): Promise<void> {
-    await prisma.emailVerificationToken.delete({
+  async deleteEmailVerificationToken(token: string, tx?: Prisma.TransactionClient): Promise<void> {
+    const db = tx || prisma;
+    await db.emailVerificationToken.delete({
       where: { token },
     });
   }
@@ -54,9 +58,10 @@ export class AuthRepository {
   /**
    * Create password reset token
    */
-  async createPasswordResetToken(userId: string): Promise<string> {
+  async createPasswordResetToken(userId: string, tx?: Prisma.TransactionClient): Promise<string> {
+    const db = tx || prisma;
     // Delete any existing tokens
-    await prisma.passwordResetToken.deleteMany({
+    await db.passwordResetToken.deleteMany({
       where: { userId },
     });
 
@@ -65,7 +70,7 @@ export class AuthRepository {
     const hashedToken = hashToken(rawToken);
     const expiresAt = addMinutes(15); // 15 minutes
 
-    await prisma.passwordResetToken.create({
+    await db.passwordResetToken.create({
       data: {
         token: hashedToken,
         userId,
@@ -79,9 +84,10 @@ export class AuthRepository {
   /**
    * Find password reset token
    */
-  async findPasswordResetToken(token: string) {
+  async findPasswordResetToken(token: string, tx?: Prisma.TransactionClient) {
+    const db = tx || prisma;
     const hashedToken = hashToken(token);
-    return prisma.passwordResetToken.findUnique({
+    return db.passwordResetToken.findUnique({
       where: { token: hashedToken },
       include: { user: true },
     });
@@ -90,9 +96,10 @@ export class AuthRepository {
   /**
    * Delete password reset token
    */
-  async deletePasswordResetToken(token: string): Promise<void> {
+  async deletePasswordResetToken(token: string, tx?: Prisma.TransactionClient): Promise<void> {
+    const db = tx || prisma;
     const hashedToken = hashToken(token);
-    await prisma.passwordResetToken.delete({
+    await db.passwordResetToken.delete({
       where: { token: hashedToken },
     });
   }
@@ -104,11 +111,13 @@ export class AuthRepository {
     userId: string,
     token: string,
     deviceInfo?: string,
-    ipAddress?: string
+    ipAddress?: string,
+    tx?: Prisma.TransactionClient
   ) {
+    const db = tx || prisma;
     const expiresAt = addDays(7); // 7 days
 
-    return prisma.refreshToken.create({
+    return db.refreshToken.create({
       data: {
         token,
         userId,
@@ -122,8 +131,9 @@ export class AuthRepository {
   /**
    * Find refresh token
    */
-  async findRefreshToken(token: string) {
-    return prisma.refreshToken.findUnique({
+  async findRefreshToken(token: string, tx?: Prisma.TransactionClient) {
+    const db = tx || prisma;
+    return db.refreshToken.findUnique({
       where: { token },
       include: { user: true },
     });
@@ -132,8 +142,9 @@ export class AuthRepository {
   /**
    * Delete refresh token (for rotation)
    */
-  async deleteRefreshToken(token: string): Promise<void> {
-    await prisma.refreshToken.delete({
+  async deleteRefreshToken(token: string, tx?: Prisma.TransactionClient): Promise<void> {
+    const db = tx || prisma;
+    await db.refreshToken.delete({
       where: { token },
     });
   }
@@ -141,8 +152,9 @@ export class AuthRepository {
   /**
    * Revoke refresh token
    */
-  async revokeRefreshToken(token: string): Promise<void> {
-    await prisma.refreshToken.update({
+  async revokeRefreshToken(token: string, tx?: Prisma.TransactionClient): Promise<void> {
+    const db = tx || prisma;
+    await db.refreshToken.update({
       where: { token },
       data: { isRevoked: true },
     });
@@ -151,10 +163,21 @@ export class AuthRepository {
   /**
    * Revoke all refresh tokens for a user
    */
-  async revokeAllUserRefreshTokens(userId: string): Promise<void> {
-    await prisma.refreshToken.updateMany({
+  async revokeAllUserRefreshTokens(userId: string, tx?: Prisma.TransactionClient): Promise<void> {
+    const db = tx || prisma;
+    await db.refreshToken.updateMany({
       where: { userId },
       data: { isRevoked: true },
+    });
+  }
+
+  /**
+   * Delete all refresh tokens for a user
+   */
+  async deleteAllUserRefreshTokens(userId: string, tx?: Prisma.TransactionClient): Promise<void> {
+    const db = tx || prisma;
+    await db.refreshToken.deleteMany({
+      where: { userId },
     });
   }
 

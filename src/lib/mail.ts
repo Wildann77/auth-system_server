@@ -5,6 +5,7 @@
 
 import nodemailer from 'nodemailer';
 import { env } from '@/config/env';
+import { logger } from '@/shared/utils/logger';
 
 export interface EmailOptions {
   to: string;
@@ -46,10 +47,10 @@ export const sendEmail = async (options: EmailOptions): Promise<boolean> => {
     };
 
     await transporter.sendMail(mailOptions);
-    console.log(`✅ Email sent to ${options.to}`);
+    logger.info(`Email sent to ${options.to}`);
     return true;
   } catch (error) {
-    console.error('❌ Failed to send email:', error);
+    logger.error('Failed to send email', { error: (error as Error).message });
     return false;
   }
 };

@@ -10,7 +10,7 @@ export class AuthController {
   async register(req: Request<{}, {}, RegisterInput>, res: Response): Promise<void> {
     const { email, password, firstName, lastName } = req.body;
     const result = await authService.register(email, password, firstName, lastName);
-    res.status(201).json(result);
+    res.status(201).apiSuccess(result, 'User registered successfully');
   }
 
   /**
@@ -33,10 +33,7 @@ export class AuthController {
 
     // KIRIM Access Token di JSON Body (Agar bisa dibaca Frontend State)
     // Refresh Token TIDAK dikirim di sini karena sudah ada di Cookie
-    res.json({
-      user: result.user,
-      accessToken: result.tokens?.accessToken,
-    });
+    res.apiSuccess({ user: result.user, accessToken: result.tokens?.accessToken }, 'Login successful');
   }
 
   /**
@@ -45,7 +42,7 @@ export class AuthController {
   async verifyEmail(req: Request<{}, {}, VerifyEmailInput>, res: Response): Promise<void> {
     const { token } = req.body;
     await authService.verifyEmail(token);
-    res.json({ message: 'Email verified successfully' });
+    res.apiSuccess(null, 'Email verified successfully');
   }
 
   /**
@@ -54,7 +51,7 @@ export class AuthController {
   async resendVerification(req: Request<{}, {}, ForgotPasswordInput>, res: Response): Promise<void> {
     const { email } = req.body;
     await authService.resendVerificationEmail(email);
-    res.json({ message: 'Verification email sent if account exists' });
+    res.apiSuccess(null, 'Verification email sent if account exists');
   }
 
   /**
@@ -63,7 +60,7 @@ export class AuthController {
   async forgotPassword(req: Request<{}, {}, ForgotPasswordInput>, res: Response): Promise<void> {
     const { email } = req.body;
     await authService.forgotPassword(email);
-    res.json({ message: 'Password reset email sent if account exists' });
+    res.apiSuccess(null, 'Password reset email sent if account exists');
   }
 
   /**
@@ -72,7 +69,7 @@ export class AuthController {
   async resetPassword(req: Request<{}, {}, ResetPasswordInput>, res: Response): Promise<void> {
     const { token, password } = req.body;
     await authService.resetPassword(token, password);
-    res.json({ message: 'Password reset successfully' });
+    res.apiSuccess(null, 'Password reset successfully');
   }
 
   /**
@@ -93,9 +90,7 @@ export class AuthController {
     });
 
     // Kirim Access Token BARU di JSON Body
-    res.json({ 
-      accessToken: result.accessToken 
-    });
+    res.apiSuccess({ accessToken: result.accessToken }, 'Token refreshed successfully');
   }
 
   /**
@@ -118,7 +113,7 @@ export class AuthController {
     res.clearCookie('accessToken', cookieOptions);
     res.clearCookie('refreshToken', cookieOptions);
 
-    res.json({ message: 'Logged out successfully' });
+    res.apiSuccess(null, 'Logged out successfully');
   }
 
   /**
@@ -127,7 +122,7 @@ export class AuthController {
   async enable2FA(req: Request<{}, {}, Enable2FAInput>, res: Response): Promise<void> {
     const { password } = req.body;
     const result = await authService.enable2FA(req.user!.id, password);
-    res.json(result);
+    res.apiSuccess(result, '2FA setup initiated');
   }
 
   /**
@@ -136,7 +131,7 @@ export class AuthController {
   async confirm2FA(req: Request<{}, {}, Verify2FAInput>, res: Response): Promise<void> {
     const { code } = req.body;
     await authService.confirm2FA(req.user!.id, code);
-    res.json({ message: '2FA enabled successfully' });
+    res.apiSuccess(null, '2FA enabled successfully');
   }
 
   /**
@@ -145,7 +140,7 @@ export class AuthController {
   async disable2FA(req: Request<{}, {}, Disable2FAInput>, res: Response): Promise<void> {
     const { code, password } = req.body;
     await authService.disable2FA(req.user!.id, password, code);
-    res.json({ message: '2FA disabled successfully' });
+    res.apiSuccess(null, '2FA disabled successfully');
   }
 
   /**
@@ -154,7 +149,7 @@ export class AuthController {
   async changePassword(req: Request<{}, {}, ChangePasswordInput>, res: Response): Promise<void> {
     const { currentPassword, newPassword } = req.body;
     await authService.changePassword(req.user!.id, currentPassword, newPassword);
-    res.json({ message: 'Password changed successfully' });
+    res.apiSuccess(null, 'Password changed successfully');
   }
 
   /**
@@ -162,7 +157,7 @@ export class AuthController {
    */
   async getMe(req: Request, res: Response): Promise<void> {
     const user = await authService.getCurrentUser(req.user!.id);
-    res.json(user);
+    res.apiSuccess(user, 'User profile retrieved');
   }
 
   /**

@@ -14,8 +14,6 @@ export const checkoutSchema = z.object({
   }),
 });
 
-export type CheckoutInput = z.infer<typeof checkoutSchema>['body'];
-
 // Webhook schema for Midtrans (General structure)
 export const midtransWebhookSchema = z.object({
   body: z.object({
@@ -28,5 +26,3 @@ export const midtransWebhookSchema = z.object({
     transaction_id: z.string(),
   }).passthrough(), // Allow other fields from Midtrans
 });
-
-export type MidtransWebhookInput = z.infer<typeof midtransWebhookSchema>['body'];

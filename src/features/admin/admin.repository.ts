@@ -4,8 +4,8 @@
  */
 
 import { prisma } from '@/config/db';
+import { Prisma, Role } from '@prisma/client';
 import { userRepository } from '@/features/user/user.repository';
-import { Role } from '@prisma/client';
 
 export class AdminRepository {
   /**
@@ -18,8 +18,9 @@ export class AdminRepository {
   /**
    * Update user role
    */
-  async updateUserRole(id: string, role: Role) {
-    return prisma.user.update({
+  async updateUserRole(id: string, role: Role, tx?: Prisma.TransactionClient) {
+    const db = tx || prisma;
+    return db.user.update({
       where: { id },
       data: { role },
     });
@@ -28,8 +29,8 @@ export class AdminRepository {
   /**
    * Delete user
    */
-  async deleteUser(id: string) {
-    return userRepository.delete(id);
+  async deleteUser(id: string, tx?: Prisma.TransactionClient) {
+    return userRepository.delete(id, tx);
   }
 
   /**

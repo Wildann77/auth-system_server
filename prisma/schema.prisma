@@ -155,3 +155,22 @@ model Order {
   @@index([status])
   @@index([externalId])
 }
+
+// ===========================================
+// CONTENT MODEL
+// ===========================================
+
+model Content {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  content     String
+  contentType String   @default("text") // text, url, html
+  isPremium   Boolean  @default(true)
+  tags        String[] // Array of tags
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isPremium])
+}

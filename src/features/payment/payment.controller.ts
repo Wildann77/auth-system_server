@@ -1,41 +1,36 @@
 import { Request, Response } from 'express';
-import { PaymentService } from './payment.service';
-import { CheckoutInput, MidtransWebhookInput } from './payment.schema';
+import { paymentService } from './payment.service';
+import { CheckoutInput, MidtransWebhookInput } from './payment.types';
 
 export class PaymentController {
-  constructor(private paymentService: PaymentService) {}
 
-  initializePayment = async (
+  async initializePayment(
     req: Request<{}, {}, CheckoutInput>,
     res: Response
-  ) => {
+  ): Promise<void> {
     const { amount, provider, orderType, items } = req.body;
     const userId = req.user!.id;
 
-    const session = await this.paymentService.createPaymentSession(userId, amount, provider, orderType, items);
+    const session = await paymentService.createPaymentSession(userId, amount, provider, orderType, items);
 
-    return res.status(200).json({
-      status: 'success',
-      data: session
-    });
-  };
+    res.status(200).apiSuccess(session, 'Payment session created successfully');
+  }
 
-  handleWebhook = async (
+  async handleWebhook(
     req: Request<{}, {}, MidtransWebhookInput>,
     res: Response
-  ) => {
-    await this.paymentService.handleMidtransWebhook(req.body);
+  ): Promise<void> {
+    await paymentService.handleMidtransWebhook(req.body, req.requestId);
 
-    return res.status(200).json({
-      status: 'success',
-      message: 'OK'
-    });
-  };
+    res.status(200).apiSuccess(null, 'Webhook processed successfully');
+  }
 
-  handleStripeWebhook = async (req: Request, res: Response) => {
+  async handleStripeWebhook(req: Request, res: Response): Promise<void> {
     const sig = req.headers['stripe-signature'] as string;
-    await this.paymentService.handleStripeWebhook(sig, req.body);
+    await paymentService.handleStripeWebhook(sig, req.body, req.requestId);
 
-    return res.status(200).json({ received: true });
-  };
+    res.status(200).apiSuccess(null, 'Stripe webhook received');
+  }
 }
+
+export const paymentController = new PaymentController();

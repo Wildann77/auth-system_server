@@ -5,6 +5,7 @@
 
 import { PrismaClient } from '@prisma/client';
 import { isProduction } from './env';
+import { logger } from '@/shared/utils/logger';
 
 declare global {
   // eslint-disable-next-line no-var
@@ -39,10 +40,10 @@ export const connectDatabase = async (retries = 5): Promise<void> => {
   for (let i = 0; i < retries; i++) {
     try {
       await prisma.$connect();
-      console.log('✅ Database connected successfully');
+      logger.info('Database connected successfully');
       return;
     } catch (error) {
-      console.error(`❌ Database connection failed (attempt ${i + 1}/${retries}):`, error);
+      logger.error(`Database connection failed (attempt ${i + 1}/${retries})`, { error: (error as Error).message });
       if (i === retries - 1) throw error;
       await new Promise(resolve => setTimeout(resolve, 3000));
     }

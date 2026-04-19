@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { adminService } from './admin.service';
 import { AdminUsersQueryParams, UpdateUserRoleInput } from './admin.schema';
+import { createPaginatedResponse } from '@/shared/types/api-response';
 
 export class AdminController {
   /**
@@ -15,7 +16,7 @@ export class AdminController {
       provider: req.query.provider,
     };
     const result = await adminService.getUsers(filters, page, limit);
-    res.json(result);
+    res.apiSuccess(createPaginatedResponse(result.users, result.total, result.page, result.limit), 'Users retrieved successfully');
   }
 
   /**
@@ -23,7 +24,7 @@ export class AdminController {
    */
   async getStats(req: Request, res: Response): Promise<void> {
     const stats = await adminService.getStats();
-    res.json(stats);
+    res.apiSuccess(stats, 'Statistics retrieved successfully');
   }
 
   /**
@@ -31,7 +32,7 @@ export class AdminController {
    */
   async updateUserRole(req: Request<UpdateUserRoleInput['params'], {}, UpdateUserRoleInput['body']>, res: Response): Promise<void> {
     const user = await adminService.updateUserRole(req.params.id, req.body.role);
-    res.json(user);
+    res.apiSuccess(user, 'User role updated successfully');
   }
 
   /**
@@ -39,7 +40,7 @@ export class AdminController {
    */
   async deleteUser(req: Request<{ id: string }>, res: Response): Promise<void> {
     await adminService.deleteUser(req.params.id);
-    res.json({ message: 'User deleted successfully' });
+    res.apiSuccess(null, 'User deleted successfully');
   }
 }
 

@@ -1,15 +1,12 @@
 import { Request, Response } from 'express';
-import { ContentService } from './content.service';
+import { contentService } from './content.service';
 
 export class ContentController {
-  constructor(private contentService: ContentService) {}
+  async getExclusiveContent(req: Request, res: Response): Promise<void> {
+    const content = await contentService.getExclusiveContent();
 
-  getExclusiveContent = async (req: Request, res: Response) => {
-    const content = await this.contentService.getExclusiveContent();
-
-    return res.status(200).json({
-      status: 'success',
-      data: content
-    });
-  };
+    res.status(200).apiSuccess(content, 'Exclusive content retrieved successfully');
+  }
 }
+
+export const contentController = new ContentController();
