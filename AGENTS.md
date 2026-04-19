@@ -103,7 +103,7 @@ export const exampleSchema = z.object({
 export type ExampleInput = z.infer<typeof exampleSchema>['body'];
 ```
 
-## API Routes
+## API Route
 
 ```
 /api/v1/auth/*           - Authentication endpoints (login, register, refresh, 2FA, etc.)
