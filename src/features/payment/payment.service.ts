@@ -13,16 +13,30 @@ export class PaymentService {
   // I will rewrite the whole class content for clarity in this block since it's cleaner for service logic.
 
   async createPaymentSession(userId: string, amount: number, provider: 'midtrans' | 'stripe' = 'midtrans', orderType: 'GENERAL' | 'PREMIUM_UPGRADE' = 'GENERAL', items?: any) {
+    // For premium upgrades, validate user and hardcode price
+    if (orderType === 'PREMIUM_UPGRADE') {
+      const user = await this.paymentRepository.findUserById(userId);
+      if (!user) throw new Error('User not found');
+      if (user.isPremium) throw new Error('User is already premium');
+
+      // Hardcode premium price (e.g., 50000 IDR)
+      const premiumPrice = 50000;
+      if (amount !== premiumPrice) throw new Error('Invalid premium upgrade amount');
+
+      // Override amount with hardcoded price
+      amount = premiumPrice;
+    }
+
     if (provider === 'midtrans') {
-      return this.createMidtransSession(userId, amount, items);
+      return this.createMidtransSession(userId, amount, orderType, items);
     } else {
       if (!stripe) throw new Error('Stripe is not configured');
-      return this.createStripeSession(userId, amount);
+      return this.createStripeSession(userId, amount, orderType);
     }
   }
 
-  private async createMidtransSession(userId: string, amount: number, items?: any) {
-    const order = await this.paymentRepository.createOrder({ userId, amount, items });
+  private async createMidtransSession(userId: string, amount: number, orderType: 'GENERAL' | 'PREMIUM_UPGRADE', items?: any) {
+    const order = await this.paymentRepository.createOrder({ userId, amount, orderType, items });
     try {
       const parameter = {
         transaction_details: { order_id: order.id, gross_amount: amount },
@@ -36,8 +50,8 @@ export class PaymentService {
     }
   }
 
-  private async createStripeSession(userId: string, amount: number) {
-    const order = await this.paymentRepository.createOrder({ userId, amount });
+  private async createStripeSession(userId: string, amount: number, orderType: 'GENERAL' | 'PREMIUM_UPGRADE') {
+    const order = await this.paymentRepository.createOrder({ userId, amount, orderType });
     try {
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
