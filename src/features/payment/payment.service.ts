@@ -12,7 +12,7 @@ export class PaymentService {
   // ... (previous Midtrans logic kept implicitly if I use multi-replace or just replace block)
   // I will rewrite the whole class content for clarity in this block since it's cleaner for service logic.
 
-  async createPaymentSession(userId: string, amount: number, provider: 'midtrans' | 'stripe' = 'midtrans', items?: any) {
+  async createPaymentSession(userId: string, amount: number, provider: 'midtrans' | 'stripe' = 'midtrans', orderType: 'GENERAL' | 'PREMIUM_UPGRADE' = 'GENERAL', items?: any) {
     if (provider === 'midtrans') {
       return this.createMidtransSession(userId, amount, items);
     } else {

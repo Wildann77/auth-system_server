@@ -9,10 +9,10 @@ export class PaymentController {
     req: Request<{}, {}, CheckoutInput>,
     res: Response
   ) => {
-    const { amount, provider, items } = req.body;
+    const { amount, provider, orderType, items } = req.body;
     const userId = req.user!.id;
 
-    const session = await this.paymentService.createPaymentSession(userId, amount, provider, items);
+    const session = await this.paymentService.createPaymentSession(userId, amount, provider, orderType, items);
 
     return res.status(200).json({
       status: 'success',
