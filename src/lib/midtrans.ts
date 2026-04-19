@@ -5,6 +5,6 @@ dotenv.config();
 
 export const snap = new midtransClient.Snap({
   isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
-  serverKey: process.env.MIDTRANS_SERVER_KEY || '',
-  clientKey: process.env.MIDTRANS_CLIENT_KEY || '',
+  serverKey: process.env.SERVER_KEY_MIDTRANS || '',
+  clientKey: process.env.CLIENT_KEY_MIDTRANS || '',
 });

@@ -16,6 +16,7 @@ export class PaymentService {
     if (provider === 'midtrans') {
       return this.createMidtransSession(userId, amount, items);
     } else {
+      if (!stripe) throw new Error('Stripe is not configured');
       return this.createStripeSession(userId, amount);
     }
   }
@@ -44,7 +45,7 @@ export class PaymentService {
           price_data: {
             currency: 'idr',
             product_data: { name: `Order ${order.id}` },
-            unit_amount: amount, // Stripe uses smallest unit but IDR has no subunit in implementation usually? Actually Stripe IDR unit is 1.
+            unit_amount: amount * 100, // Stripe expects IDR in subunits (cents format)
           },
           quantity: 1,
         }],
@@ -66,7 +67,7 @@ export class PaymentService {
   async handleMidtransWebhook(payload: MidtransWebhookInput) {
     // ... logic remains same ...
     const { order_id, status_code, gross_amount, signature_key, transaction_status, transaction_id, payment_type } = payload;
-    const serverKey = process.env.MIDTRANS_SERVER_KEY || '';
+    const serverKey = process.env.SERVER_KEY_MIDTRANS || '';
     const hash = crypto.createHash('sha512').update(`${order_id}${status_code}${gross_amount}${serverKey}`).digest('hex');
     if (hash !== signature_key) throw new Error('Invalid signature');
     const order = await this.paymentRepository.findOrderById(order_id);
@@ -78,7 +79,8 @@ export class PaymentService {
   }
 
   async handleStripeWebhook(signature: string, payload: any) {
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
+    if (!stripe) throw new Error('Stripe is not configured');
+    const webhookSecret = process.env.WEBHOOK_SECRET_STRIPE || '';
     let event: Stripe.Event;
 
     try {
