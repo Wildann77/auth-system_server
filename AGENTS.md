@@ -80,7 +80,11 @@ src/
 - **Payment Webhook Security**:
   - **Signature Verification**: Mandatory validation of webhook payloads using provider-specific signatures (e.g., Midtrans server-key hash or Stripe-Signature header).
   - **Idempotency Check**: Ensure each transaction is processed exactly once by checking the internal `orderId` status before updating.
-  - **Public Endpoint**: Webhook routes are excluded from standard `requireAuth` middleware but must implement strict origin/signature validation.
+  - **Public Endpoint**: Webhook routes are excluded from standard `authMiddleware` but must implement strict origin/signature validation.
+- **Payment Webhook Security**:
+  - **Signature Verification**: Mandatory validation of webhook payloads using provider-specific signatures (e.g., Midtrans server-key hash or Stripe-Signature header).
+  - **Idempotency Check**: Ensure each transaction is processed exactly once by checking the internal `orderId` status before updating.
+  - **Public Endpoint**: Webhook routes are excluded from standard `authMiddleware` but must implement strict origin/signature validation.
 
 ## TypeScript Guidelines
 
