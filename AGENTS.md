@@ -81,6 +81,10 @@ src/
   - **Signature Verification**: Mandatory validation of webhook payloads using provider-specific signatures (e.g., Midtrans server-key hash or Stripe-Signature header).
   - **Idempotency Check**: Ensure each transaction is processed exactly once by checking the internal `orderId` status before updating.
   - **Public Endpoint**: Webhook routes are excluded from standard `authMiddleware` but must implement strict origin/signature validation.
+- **Payment Gateway Integration**:
+  - **Dual Gateway Support**: Midtrans (for IDR/Local) and Stripe (for Global/Cards).
+  - **Idempotency**: All updates to `Order` status are idempotent based on the `externalId` or `paymentIntentId`.
+  - **Webhook Endpoints**: `/api/v1/payment/webhook` (Midtrans) and `/api/v1/payment/webhook-stripe` (Stripe).
 
 ## TypeScript Guidelines
 
@@ -109,6 +113,7 @@ export type ExampleInput = z.infer<typeof exampleSchema>['body'];
 /api/v1/user/me          - Personal user profile management
 /api/v1/admin/*          - Admin management endpoints (requires ADMIN role)
 /api/v1/payment/checkout  - Initialize payment (requires AUTH)
-/api/v1/payment/webhook   - Gateway callback (PUBLIC, with signature check)
+/api/v1/payment/webhook   - Midtrans Gateway callback (PUBLIC)
+/api/v1/payment/webhook-stripe - Stripe Gateway callback (PUBLIC)
 /health                  - Health check
 ```
