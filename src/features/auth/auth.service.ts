@@ -371,6 +371,7 @@ export class AuthService {
       email: user.email,
       role: (user.role as any).name || user.role,
       tokenVersion: user.tokenVersion,
+      isPremium: user.isPremium,
     };
 
     const accessToken = generateAccessToken(payload);

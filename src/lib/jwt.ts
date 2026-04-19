@@ -11,6 +11,7 @@ export interface TokenPayload {
   email: string;
   role: string;
   tokenVersion: number;
+  isPremium: boolean;
 }
 
 export interface AccessTokenPayload extends TokenPayload, JwtPayload {

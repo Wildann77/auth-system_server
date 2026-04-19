@@ -25,6 +25,7 @@ export interface AuthenticatedUser {
   email: string;
   role: Role;
   tokenVersion: number;
+  isPremium: boolean;
 }
 
 export interface TokenPayload {
@@ -32,4 +33,5 @@ export interface TokenPayload {
   email: string;
   role: Role;
   tokenVersion: number;
+  isPremium: boolean;
 }

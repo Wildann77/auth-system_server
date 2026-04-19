@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Project Overview
-Node.js/TypeScript authentication system using Express, Prisma (PostgreSQL/Neon), JWT, 2FA, and Google OAuth. Feature-based architecture.
+Node.js/TypeScript authentication system using Express, Prisma (PostgreSQL/Neon), JWT, 2FA, Google OAuth, and premium subscription features. Feature-based architecture.
 
 ## Commands
 
@@ -40,7 +40,8 @@ src/
 │   ├── admin/        # routes, controller, service, repository, schema, types
 │   ├── auth/         # routes, controller, service, repository, schema, types
 │   ├── user/         # routes, controller, service, repository, schema, types
-│   └── payment/      # routes, controller, service, repository, schema, types
+│   ├── payment/      # routes, controller, service, repository, schema, types
+│   └── content/      # routes, controller, service, repository, schema, types
 ├── lib/              # jwt.ts, password.ts, mail.ts, otp.ts, midtrans.ts/stripe.ts
 └── shared/
     ├── middleware/   # auth-middleware, error-handler, validate-request, etc.
@@ -76,6 +77,12 @@ src/
   - **requireRole Middleware**: Protects admin routes with role checks (403 Forbidden for insufficient permissions).
   - **Admin Features**: Exclusive endpoints for user management (list, role update, delete) accessible only to ADMIN role.
   - **User Isolation**: Personal endpoints limited to own profile; no global user management for regular users.
+- **Premium Access Control**:
+  - **requirePremium Middleware**: Protects premium routes with subscription checks (403 Forbidden for non-premium users).
+  - **Premium Upgrade Flow**: Users can purchase premium status through payment gateways (Midtrans/Stripe).
+  - **Automatic Activation**: Premium status is granted automatically upon successful payment via webhook processing.
+  - **Token Refresh**: Premium upgrades trigger token version increment, forcing users to re-authenticate and receive updated tokens.
+  - **OAuth Compatibility**: Premium upgrades work for all user types (LOCAL and GOOGLE providers).
 - **Prisma Singleton**: Use `prisma` from `@/config/db` only.
 - **Payment Webhook Security**:
   - **Signature Verification**: Mandatory validation of webhook payloads using provider-specific signatures (e.g., Midtrans server-key hash or Stripe-Signature header).
@@ -83,6 +90,7 @@ src/
   - **Public Endpoint**: Webhook routes are excluded from standard `authMiddleware` but must implement strict origin/signature validation.
 - **Payment Gateway Integration**:
   - **Dual Gateway Support**: Midtrans (for IDR/Local) and Stripe (for Global/Cards).
+  - **Order Types**: Support for GENERAL and PREMIUM_UPGRADE orders with automatic user status updates.
   - **Idempotency**: All updates to `Order` status are idempotent based on the `externalId` or `paymentIntentId`.
   - **Webhook Endpoints**: `/api/v1/payment/webhook` (Midtrans) and `/api/v1/payment/webhook-stripe` (Stripe).
 
@@ -115,5 +123,6 @@ export type ExampleInput = z.infer<typeof exampleSchema>['body'];
 /api/v1/payment/checkout  - Initialize payment (requires AUTH)
 /api/v1/payment/webhook   - Midtrans Gateway callback (PUBLIC)
 /api/v1/payment/webhook-stripe - Stripe Gateway callback (PUBLIC)
+/api/v1/content/exclusive - Premium-only content (requires PREMIUM status)
 /health                  - Health check
 ```

@@ -129,6 +129,7 @@ export const refreshTokenSchema = z.object({
  */
 export const logoutSchema = z.object({
   body: z.object({
+    refreshToken: z.string().optional(),
     allDevices: z.boolean().optional().default(false),
   }).optional(),
 });

@@ -37,6 +37,7 @@ export class UserRepository {
         email: true,
         role: true,
         tokenVersion: true,
+        isPremium: true,
       },
     });
   }

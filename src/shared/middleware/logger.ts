@@ -18,7 +18,7 @@ const formatLogEntry = (req: Request, res: Response, duration: number) => ({
   duration: `${duration}ms`,
   ip: req.ip || req.connection.remoteAddress,
   userAgent: req.get('user-agent'),
-  userId: req.user?.userId,
+  userId: req.user?.id,
 });
 
 /**

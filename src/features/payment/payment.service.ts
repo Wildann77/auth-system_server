@@ -54,7 +54,7 @@ export class PaymentService {
   private async createStripeSession(userId: string, amount: number, orderType: 'GENERAL' | 'PREMIUM_UPGRADE') {
     const order = await this.paymentRepository.createOrder({ userId, amount, orderType });
     try {
-      const session = await stripe.checkout.sessions.create({
+      const session = await stripe!.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [{
           price_data: {
@@ -103,7 +103,7 @@ export class PaymentService {
   async handleStripeWebhook(signature: string, payload: any) {
     if (!stripe) throw new Error('Stripe is not configured');
     const webhookSecret = process.env.WEBHOOK_SECRET_STRIPE || '';
-    let event: Stripe.Event;
+    let event: any;
 
     try {
       event = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
@@ -112,13 +112,17 @@ export class PaymentService {
     }
 
     if (event.type === 'checkout.session.completed') {
-      const session = event.data.object as Stripe.Checkout.Session;
+      const session = event.data.object as any;
       const orderId = session.metadata?.orderId;
       if (orderId) {
-        await this.paymentRepository.updateOrderStatus(orderId, OrderStatus.SUCCESS, session.payment_intent as string, 'stripe');
+        const updatedOrder = await this.paymentRepository.updateOrderStatus(orderId, OrderStatus.SUCCESS, session.payment_intent as string, 'stripe');
+        // Handle premium upgrade
+        if (updatedOrder?.orderType === 'PREMIUM_UPGRADE') {
+          await this.upgradeUserToPremium(updatedOrder.userId);
+        }
       }
     } else if (event.type === 'checkout.session.expired') {
-       const session = event.data.object as Stripe.Checkout.Session;
+       const session = event.data.object as any;
        const orderId = session.metadata?.orderId;
        if (orderId) await this.paymentRepository.updateOrderStatus(orderId, OrderStatus.FAILED);
     }
