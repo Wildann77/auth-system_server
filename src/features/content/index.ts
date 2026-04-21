@@ -1,4 +1,4 @@
-export * from './content.types';
-export * from './content.repository';
-export * from './content.service';
-export { contentRouter } from './content.routes';
+export * from './types/content.types';
+export * from './repositories/content.repository';
+export * from './services/content.service';
+export { contentRouter } from './routes/content.routes';
