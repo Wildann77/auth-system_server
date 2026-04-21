@@ -1,4 +1,4 @@
-export * from './payment.types';
-export * from './payment.repository';
-export * from './payment.service';
-export { paymentRouter } from './payment.routes';
+export * from './types/payment.types';
+export * from './repositories/payment.repository';
+export * from './services';
+export { paymentRouter } from './routes/payment.routes';
