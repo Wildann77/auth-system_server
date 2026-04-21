@@ -1,0 +1,198 @@
+import { prisma } from '@/config/db';
+import { Prisma } from '@prisma/client';
+import { authRepository } from '@/features/auth/repositories/auth.repository';
+import { userRepository } from '@/features/user/repositories/user.repository';
+import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '@/lib/jwt';
+import { hashPassword, verifyPassword } from '@/lib/password';
+import { verifyToken } from '@/lib/otp';
+import { isExpired } from '@/shared/utils/date';
+import { UnauthorizedError, BadRequestError, NotFoundError, ConflictError } from '@/shared/middleware/error-handler';
+import { AuthResponse, TokenResponse } from '@/features/auth/types/auth.types';
+
+export class CoreAuthService {
+  async register(
+    email: string,
+    password: string,
+    firstName?: string,
+    lastName?: string
+  ): Promise<AuthResponse> {
+    const existingUser = await userRepository.findByEmail(email);
+    if (existingUser) {
+      throw new ConflictError('Email already registered');
+    }
+
+    const passwordHash = await hashPassword(password);
+
+    const user = await userRepository.create({
+      email: email.toLowerCase(),
+      passwordHash,
+      firstName,
+      lastName,
+      provider: 'LOCAL',
+    });
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+      },
+    };
+  }
+
+  async login(email: string, password: string, otp?: string): Promise<AuthResponse> {
+    const user = await userRepository.findByEmail(email);
+    if (!user) {
+      throw new UnauthorizedError('Invalid credentials');
+    }
+
+    if (user.provider !== 'LOCAL') {
+      throw new UnauthorizedError('Please use OAuth login for this account');
+    }
+
+    const isValidPassword = await verifyPassword(password, user.passwordHash || '');
+    if (!isValidPassword) {
+      throw new UnauthorizedError('Invalid credentials');
+    }
+
+    if (!user.isEmailVerified) {
+      throw new BadRequestError('Please verify your email first');
+    }
+
+    if (user.twoFactorEnabled) {
+      if (!otp) {
+        throw new BadRequestError('2FA code required');
+      }
+
+      const isValidOTP = verifyToken(otp, user.twoFactorSecret || '');
+      if (!isValidOTP) {
+        throw new UnauthorizedError('Invalid 2FA code');
+      }
+    }
+
+    await userRepository.updateLastLogin(user.id);
+
+    const tokens = await this.generateTokens(user.id, user.email, user.role as string);
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role as string,
+      },
+      tokens,
+    };
+  }
+
+  async refreshAccessToken(refreshToken: string): Promise<TokenResponse> {
+    let payload;
+    try {
+      payload = verifyRefreshToken(refreshToken);
+    } catch {
+      throw new UnauthorizedError('Invalid refresh token');
+    }
+
+    const tokenRecord = await authRepository.findRefreshToken(refreshToken);
+    if (!tokenRecord || tokenRecord.isRevoked || isExpired(tokenRecord.expiresAt)) {
+      if (tokenRecord?.isRevoked) {
+        await prisma.$transaction(async (tx) => {
+          await authRepository.revokeAllUserRefreshTokens(payload.userId, tx);
+          await userRepository.incrementTokenVersion(payload.userId, tx);
+        });
+      }
+      throw new UnauthorizedError('Session expired or invalidated');
+    }
+
+    const user = await userRepository.findByIdWithTokenVersion(payload.userId);
+    if (!user || user.tokenVersion !== payload.tokenVersion) {
+      throw new UnauthorizedError('Session has been globally invalidated');
+    }
+
+    return prisma.$transaction(async (tx) => {
+      await authRepository.deleteRefreshToken(refreshToken, tx);
+      const userWithRole = await userRepository.findByIdWithTokenVersion(user.id, tx);
+      const tokens = await this.generateTokens(user.id, user.email, (userWithRole?.role as any).name || userWithRole?.role, tx);
+      return tokens;
+    });
+  }
+
+  async logout(refreshToken: string, allDevices = false): Promise<void> {
+    try {
+      const payload = verifyRefreshToken(refreshToken);
+
+      if (allDevices) {
+        await prisma.$transaction(async (tx) => {
+          await authRepository.revokeAllUserRefreshTokens(payload.userId, tx);
+          await userRepository.incrementTokenVersion(payload.userId, tx);
+        });
+      } else {
+        await authRepository.deleteRefreshToken(refreshToken);
+      }
+    } catch {
+      // Ignore error if token is already invalid
+    }
+  }
+
+  async getCurrentUser(userId: string): Promise<{
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+    role: string;
+    isEmailVerified: boolean;
+    twoFactorEnabled: boolean;
+  }> {
+    const user = await userRepository.findById(userId);
+
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      isEmailVerified: user.isEmailVerified,
+      twoFactorEnabled: user.twoFactorEnabled,
+    };
+  }
+
+  async generateTokens(
+    userId: string,
+    email: string,
+    role: string,
+    tx?: Prisma.TransactionClient
+  ): Promise<TokenResponse> {
+    const user = await userRepository.findByIdWithTokenVersion(userId, tx);
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    const payload = {
+      userId: user.id,
+      email: user.email,
+      role: (user.role as any).name || user.role,
+      tokenVersion: user.tokenVersion,
+      isPremium: user.isPremium,
+    };
+
+    const accessToken = generateAccessToken(payload);
+    const refreshToken = generateRefreshToken(payload);
+
+    await authRepository.createRefreshToken(userId, refreshToken, undefined, undefined, tx);
+
+    return {
+      accessToken,
+      refreshToken,
+      expiresIn: 900,
+    };
+  }
+}
+
+export const coreAuthService = new CoreAuthService();
