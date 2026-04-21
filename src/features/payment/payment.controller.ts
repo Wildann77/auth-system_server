@@ -22,7 +22,7 @@ export class PaymentController {
   ): Promise<void> {
     await paymentService.handleMidtransWebhook(req.body, req.requestId);
 
-    res.status(200).apiSuccess(null, 'Webhook processed successfully');
+    res.status(200).apiSuccess(null, 'Webhook processed suc Service akan membuat record Order di database dengan status PENDING, lalu mengcessfully');
   }
 
   async handleStripeWebhook(req: Request, res: Response): Promise<void> {
