@@ -37,11 +37,55 @@ The project uses `@/` to alias `src/`. All imports must use these paths:
 src/
 ├── config/          # env.ts (Zod), db.ts (Prisma singleton)
 ├── features/
-│   ├── admin/        # routes, controller, service, repository, schema, types
-│   ├── auth/         # routes, controller, service, repository, schema, types
-│   ├── user/         # routes, controller, service, repository, schema, types
-│   ├── payment/      # routes, controller, service, repository, schema, types
-│   └── content/      # routes, controller, service, repository, schema, types
+│   ├── admin/
+│   │   ├── controllers/admin.controller.ts
+│   │   ├── repositories/admin.repository.ts
+│   │   ├── routes/admin.routes.ts
+│   │   ├── schemas/admin.schema.ts
+│   │   ├── services/user-admin.service.ts
+│   │   └── index.ts
+│   ├── auth/
+│   │   ├── controllers/auth.controller.ts
+│   │   ├── repositories/auth.repository.ts
+│   │   ├── routes/auth.routes.ts
+│   │   ├── schemas/auth.schema.ts
+│   │   ├── services/
+│   │   │   ├── core-auth.service.ts   # register, login, refresh, logout, getCurrentUser
+│   │   │   ├── account.service.ts     # email verification, password reset/change
+│   │   │   ├── two-factor.service.ts  # 2FA enable/confirm/disable
+│   │   │   ├── oauth.service.ts       # Google OAuth flow & callback
+│   │   │   └── index.ts
+│   │   ├── types/auth.types.ts
+│   │   └── index.ts
+│   ├── content/
+│   │   ├── controllers/content.controller.ts
+│   │   ├── repositories/content.repository.ts
+│   │   ├── routes/content.routes.ts
+│   │   ├── schemas/content.schema.ts
+│   │   ├── services/content.service.ts
+│   │   ├── types/content.types.ts
+│   │   └── index.ts
+│   ├── payment/
+│   │   ├── controllers/payment.controller.ts
+│   │   ├── repositories/payment.repository.ts
+│   │   ├── routes/payment.routes.ts
+│   │   ├── schemas/payment.schema.ts
+│   │   ├── services/
+│   │   │   ├── checkout.service.ts          # payment session creation (Midtrans/Stripe)
+│   │   │   ├── midtrans-webhook.service.ts  # Midtrans signature verify & order update
+│   │   │   ├── stripe-webhook.service.ts    # Stripe signature verify & order update
+│   │   │   ├── subscription.service.ts      # premium upgrade logic
+│   │   │   └── index.ts
+│   │   ├── types/payment.types.ts
+│   │   └── index.ts
+│   └── user/
+│       ├── controllers/user.controller.ts
+│       ├── repositories/user.repository.ts
+│       ├── routes/user.routes.ts
+│       ├── schemas/user.schema.ts
+│       ├── services/user.service.ts
+│       ├── types/user.types.ts
+│       └── index.ts
 ├── lib/              # jwt.ts, password.ts, mail.ts, otp.ts, midtrans.ts/stripe.ts
 └── shared/
     ├── middleware/   # auth-middleware, error-handler, validate-request, etc.
@@ -115,9 +159,11 @@ src/
 ## Code Standards & Conventions
 
 ### Architectural Patterns
-- **Feature-Based Architecture**: Each feature (auth, user, admin, payment, content) is self-contained with routes, controller, service, repository, schema, and types files.
-- **Singleton Pattern**: Services and repositories use singleton instances exported at the end of their files (e.g., `export const authService = new AuthService()`).
-- **Direct Imports**: Services import repository instances directly instead of using dependency injection constructors.
+- **Subdomain Folder Structure**: Each feature is organized into dedicated subfolders: `controllers/`, `services/`, `repositories/`, `schemas/`, `types/`, and `routes/`. Each subfolder contains only files relevant to that layer.
+- **Service Splitting**: Large service files are split by responsibility domain. Each sub-service handles one concern (e.g., `core-auth.service.ts` for session flow, `account.service.ts` for password/email, `two-factor.service.ts` for 2FA, `oauth.service.ts` for OAuth).
+- **Services Barrel Export**: Each `services/` folder contains an `index.ts` that re-exports all sub-services, allowing consumers to import from a single path.
+- **Singleton Pattern**: Services and repositories use singleton instances exported at the end of their files (e.g., `export const coreAuthService = new CoreAuthService()`).
+- **Direct Imports**: Services import repository instances directly via full alias path (e.g., `@/features/auth/repositories/auth.repository`) instead of using dependency injection.
 - **Named Exports**: Routers use named exports (e.g., `export const authRouter`) instead of default exports.
 
 ### Controller Standards
@@ -179,15 +225,18 @@ export type ExampleInput = z.infer<typeof exampleSchema>['body'];
 ```
 
 #### File Structure Standards
-- **Feature Files**: Each feature folder contains consistent files:
-  - `*.routes.ts` - Route definitions and middleware
-  - `*.controller.ts` - Request/response handling
-  - `*.service.ts` - Business logic
-  - `*.repository.ts` - Database operations
-  - `*.schema.ts` - Zod validation schemas
-  - `*.types.ts` - TypeScript interfaces
-  - `index.ts` - Module exports
-- **Index Files**: Export all public APIs using `export * from './file'` pattern.
+- **Feature Subfolders**: Each feature contains dedicated subdirectories. Never place feature files at the root of a feature folder:
+  - `controllers/` → `*.controller.ts` - Request/response handling
+  - `services/` → `*.service.ts` - Business logic (one file per responsibility)
+  - `repositories/` → `*.repository.ts` - Database operations
+  - `schemas/` → `*.schema.ts` - Zod validation schemas
+  - `types/` → `*.types.ts` - TypeScript interfaces
+  - `routes/` → `*.routes.ts` - Route definitions and middleware
+  - `index.ts` at feature root - Public API barrel export
+- **Import Paths**: When importing from within the same feature, always use full alias paths (e.g., `@/features/auth/repositories/auth.repository`), never relative paths.
+- **Cross-Feature Imports**: When a feature needs another feature's repository or service, import it via its full alias path (e.g., `@/features/user/repositories/user.repository`).
+- **Services `index.ts`**: The `services/index.ts` must re-export all sub-services in the folder so controllers can selectively import specific services.
+- **Index Files**: Feature `index.ts` exports all public APIs: types, repository singleton, service singletons, and router.
 - **No Comments**: Avoid unnecessary comments - code should be self-documenting.
 
 ### Error Handling
