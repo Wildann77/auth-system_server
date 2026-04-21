@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken } from '@/lib/jwt';
 import { UnauthorizedError } from './error-handler';
-import { userRepository } from '@/features/user/user.repository';
+import { userRepository } from '@/features/user/repositories/user.repository';
 
 export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
