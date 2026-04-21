@@ -1,4 +1,4 @@
-export * from './auth.types';
-export * from './auth.repository';
-export * from './auth.service';
-export { authRouter } from './auth.routes';
+export * from './types/auth.types';
+export * from './repositories/auth.repository';
+export * from './services';
+export { authRouter } from './routes/auth.routes';
