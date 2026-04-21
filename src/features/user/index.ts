@@ -1,4 +1,4 @@
-export * from './user.types';
-export * from './user.repository';
-export * from './user.service';
-export { userRouter } from './user.routes';
+export * from './types/user.types';
+export * from './repositories/user.repository';
+export * from './services/user.service';
+export { userRouter } from './routes/user.routes';
