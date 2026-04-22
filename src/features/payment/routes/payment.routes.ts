@@ -11,3 +11,4 @@ export const paymentRouter = Router();
 paymentRouter.post('/checkout', authMiddleware, paymentLimiter, validateRequest(checkoutSchema), asyncHandler(paymentController.initializePayment));
 paymentRouter.post('/webhook', validateRequest(midtransWebhookSchema), asyncHandler(paymentController.handleWebhook));
 paymentRouter.post('/webhook-stripe', asyncHandler(paymentController.handleStripeWebhook));
+paymentRouter.post('/simulate-success', authMiddleware, asyncHandler(paymentController.simulateSuccess));

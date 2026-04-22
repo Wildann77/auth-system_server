@@ -77,6 +77,7 @@ export class OAuthService {
           isEmailVerified: user.isEmailVerified,
           twoFactorEnabled: user.twoFactorEnabled,
           isPremium: user.isPremium,
+          premiumUntil: user.premiumUntil,
         },
         tokens,
       };

@@ -5,6 +5,8 @@ import { snap } from '@/lib/midtrans';
 import { stripe } from '@/lib/stripe';
 import { NotFoundError, ConflictError, BadRequestError, AppError } from '@/shared/middleware/error-handler';
 
+import { PAYMENT_CONSTANTS } from '@/features/payment/constants';
+
 export class CheckoutService {
   async createPaymentSession(
     userId: string,
@@ -18,7 +20,7 @@ export class CheckoutService {
       if (!user) throw new NotFoundError('User not found');
       if (user.isPremium) throw new ConflictError('User is already premium');
 
-      const premiumPrice = 99000;
+      const premiumPrice = PAYMENT_CONSTANTS.PREMIUM_UPGRADE_PRICE;
       if (amount !== premiumPrice) throw new BadRequestError('Invalid premium upgrade amount');
       amount = premiumPrice;
     }

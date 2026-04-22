@@ -157,7 +157,7 @@ async function runFullTestSuite() {
         body: JSON.stringify({ 
           gateway: 'midtrans',
           orderType: 'PREMIUM_UPGRADE',
-          amount: 50000
+          amount: 99000
         })
     });
     const checkoutData = await checkoutRes.json();
@@ -165,7 +165,7 @@ async function runFullTestSuite() {
     
     const orderId = checkoutData.data.orderId;
     const statusCode = "200";
-    const grossAmount = "50000.00";
+    const grossAmount = "99000.00";
     const signatureKey = crypto.createHash('sha512')
         .update(`${orderId}${statusCode}${grossAmount}${MIDTRANS_SERVER_KEY}`)
         .digest('hex');

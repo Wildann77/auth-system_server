@@ -11,6 +11,11 @@ export interface AuthResponse {
     firstName: string | null;
     lastName: string | null;
     role: string;
+    provider: string;
+    isEmailVerified: boolean;
+    twoFactorEnabled: boolean;
+    isPremium: boolean;
+    premiumUntil: Date | null;
   };
   tokens?: TokenResponse;
 }

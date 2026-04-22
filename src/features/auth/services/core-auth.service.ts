@@ -92,6 +92,7 @@ export class CoreAuthService {
         isEmailVerified: user.isEmailVerified,
         twoFactorEnabled: user.twoFactorEnabled,
         isPremium: user.isPremium,
+        premiumUntil: user.premiumUntil,
       },
       tokens,
     };
@@ -154,9 +155,6 @@ export class CoreAuthService {
     role: string;
     isEmailVerified: boolean;
     twoFactorEnabled: boolean;
-    provider: string;
-    tokenVersion: number;
-    isPremium: boolean;
   }> {
     const user = await userRepository.findById(userId);
 
@@ -170,11 +168,14 @@ export class CoreAuthService {
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role,
+      provider: user.provider,
       isEmailVerified: user.isEmailVerified,
       twoFactorEnabled: user.twoFactorEnabled,
-      provider: user.provider,
-      tokenVersion: user.tokenVersion,
       isPremium: user.isPremium,
+      premiumUntil: user.premiumUntil,
+      lastLoginAt: user.lastLoginAt,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
     };
   }
 

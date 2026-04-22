@@ -17,7 +17,13 @@ const PORT = env.PORT;
 app.use(requestIdMiddleware);
 app.use(loggerMiddleware);
 app.use(cors({ origin: env.FRONTEND_URL, credentials: true }));
-app.use(express.json());
+app.use(express.json({
+  verify: (req: any, _res, buf) => {
+    if (req.originalUrl.includes('/webhook-stripe')) {
+      req.rawBody = buf;
+    }
+  }
+}));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
