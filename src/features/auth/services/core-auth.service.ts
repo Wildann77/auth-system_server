@@ -2,9 +2,11 @@ import { prisma } from '@/config/db';
 import { Prisma } from '@prisma/client';
 import { authRepository } from '@/features/auth/repositories/auth.repository';
 import { userRepository } from '@/features/user/repositories/user.repository';
-import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '@/lib/jwt';
+import { generateAccessToken, generateRefreshToken, verifyRefreshToken, generateVerificationToken } from '@/lib/jwt';
 import { hashPassword, verifyPassword } from '@/lib/password';
 import { verifyToken } from '@/lib/otp';
+import { sendVerificationEmail } from '@/lib/mail';
+import { env } from '@/config/env';
 import { isExpired } from '@/shared/utils/date';
 import { UnauthorizedError, BadRequestError, NotFoundError, ConflictError } from '@/shared/middleware/error-handler';
 import { AuthResponse, TokenResponse } from '@/features/auth/types/auth.types';
@@ -30,6 +32,9 @@ export class CoreAuthService {
       lastName,
       provider: 'LOCAL',
     });
+
+    const verificationToken = generateVerificationToken(user.id, user.email);
+    await sendVerificationEmail(user.email, verificationToken, env.FRONTEND_URL);
 
     return {
       user: {
@@ -83,6 +88,10 @@ export class CoreAuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role as string,
+        provider: user.provider,
+        isEmailVerified: user.isEmailVerified,
+        twoFactorEnabled: user.twoFactorEnabled,
+        isPremium: user.isPremium,
       },
       tokens,
     };
@@ -145,6 +154,9 @@ export class CoreAuthService {
     role: string;
     isEmailVerified: boolean;
     twoFactorEnabled: boolean;
+    provider: string;
+    tokenVersion: number;
+    isPremium: boolean;
   }> {
     const user = await userRepository.findById(userId);
 
@@ -160,6 +172,9 @@ export class CoreAuthService {
       role: user.role,
       isEmailVerified: user.isEmailVerified,
       twoFactorEnabled: user.twoFactorEnabled,
+      provider: user.provider,
+      tokenVersion: user.tokenVersion,
+      isPremium: user.isPremium,
     };
   }
 

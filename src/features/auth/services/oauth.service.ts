@@ -52,6 +52,7 @@ export class OAuthService {
           firstName: firstName || undefined,
           lastName: lastName || undefined,
           provider: 'GOOGLE',
+          isEmailVerified: true,
         });
       } else {
         if (!user.isEmailVerified) {
@@ -72,10 +73,15 @@ export class OAuthService {
           firstName: user.firstName,
           lastName: user.lastName,
           role: user.role,
+          provider: user.provider,
+          isEmailVerified: user.isEmailVerified,
+          twoFactorEnabled: user.twoFactorEnabled,
+          isPremium: user.isPremium,
         },
         tokens,
       };
     } catch (error) {
+      console.error('Google OAuth Error:', error);
       throw new BadRequestError('Failed to process Google OAuth callback');
     }
   }
