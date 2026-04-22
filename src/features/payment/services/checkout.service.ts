@@ -18,7 +18,7 @@ export class CheckoutService {
       if (!user) throw new NotFoundError('User not found');
       if (user.isPremium) throw new ConflictError('User is already premium');
 
-      const premiumPrice = 50000;
+      const premiumPrice = 99000;
       if (amount !== premiumPrice) throw new BadRequestError('Invalid premium upgrade amount');
       amount = premiumPrice;
     }
