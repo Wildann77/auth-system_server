@@ -1,4 +1,7 @@
 
+const dotenv = require('dotenv');
+dotenv.config();
+
 const { PrismaClient } = require('@prisma/client');
 const jwt = require('jsonwebtoken');
 const { authenticator } = require('otplib');
@@ -6,8 +9,13 @@ const crypto = require('crypto');
 
 const prisma = new PrismaClient();
 const BASE_URL = 'http://localhost:3000/api/v1';
-const JWT_ACCESS_SECRET = "your-super-secret-access-token-key-min-32-chars";
-const MIDTRANS_SERVER_KEY = "SB-Mid-server-wgMFeFF27cnHdxvRadtvKDA9";
+const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
+const MIDTRANS_SERVER_KEY = process.env.MIDTRANS_SERVER_KEY;
+
+if (!JWT_ACCESS_SECRET || !MIDTRANS_SERVER_KEY) {
+  console.error('Missing required environment variables: JWT_ACCESS_SECRET, MIDTRANS_SERVER_KEY');
+  process.exit(1);
+}
 
 async function runFullTestSuite() {
   console.log('🚀 INITIALIZING COMPREHENSIVE TEST SUITE...');
@@ -155,7 +163,7 @@ async function runFullTestSuite() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ 
-          gateway: 'midtrans',
+          provider: 'midtrans',
           orderType: 'PREMIUM_UPGRADE',
           amount: 99000
         })
