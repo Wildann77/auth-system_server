@@ -71,6 +71,7 @@ export class UserService {
       provider: providerValue as Provider,
       isEmailVerified: user.isEmailVerified,
       twoFactorEnabled: user.twoFactorEnabled,
+      avatarUrl: user.avatarUrl,
       lastLoginAt: user.lastLoginAt,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,

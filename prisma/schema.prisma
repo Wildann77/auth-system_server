@@ -47,6 +47,7 @@ model User {
   passwordHash     String?   // Nullable for OAuth users
   firstName        String?
   lastName         String?
+  avatarUrl        String?
   role             Role      @default(USER)
   provider         Provider  @default(LOCAL)
   isEmailVerified  Boolean   @default(false)

@@ -24,6 +24,7 @@ export class UserRepository {
         role: true,
         tokenVersion: true,
         isPremium: true,
+        avatarUrl: true,
       },
     });
   }

@@ -14,8 +14,13 @@ export interface AuthResponse {
     provider: string;
     isEmailVerified: boolean;
     twoFactorEnabled: boolean;
+    avatarUrl: string | null;
     isPremium: boolean;
     premiumUntil: Date | null;
+    lastLoginAt: Date | null;
+    tokenVersion: number;
+    createdAt: Date;
+    updatedAt: Date;
   };
   tokens?: TokenResponse;
 }

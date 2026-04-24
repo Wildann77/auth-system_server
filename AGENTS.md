@@ -15,11 +15,18 @@ bun run build            # TypeScript compilation to dist/
 bun run start            # Run compiled server from dist/
 bun run lint             # ESLint on src/
 
-# Prisma (run after schema changes)
+# Prisma (CRITICAL: Run after schema changes)
+bun run prisma:push      # Push schema to database (Dev/Neon)
 bun run prisma:generate  # Generate Prisma client
-bun run prisma:push      # Push schema to database
-bun run prisma:migrate   # Run migrations
+bun run prisma:migrate   # Run migrations (Prod)
 ```
+
+**Workflow for Schema Changes:**
+1. Modify `prisma/schema.prisma`
+2. Run `bun run prisma:push` (to sync DB)
+3. Run `bun run prisma:generate` (to update types)
+4. Update TS interfaces in `features/*/types/*.types.ts`
+5. Update DTO/Service mapping (e.g., `toUserResponse`)
 
 ### Frontend (auth-frontend/)
 ```bash
@@ -65,10 +72,10 @@ src/
 │   │   ├── routes/auth.routes.ts
 │   │   ├── schemas/auth.schema.ts
 │   │   ├── services/
-│   │   │   ├── core-auth.service.ts   # register, login, refresh, logout, getCurrentUser
+│   │   │   ├── core-auth.service.ts   # register, login (returns full user with lastLogin/avatar), refresh, logout, getCurrentUser
 │   │   │   ├── account.service.ts     # email verification, password reset/change
 │   │   │   ├── two-factor.service.ts  # 2FA enable/confirm/disable
-│   │   │   ├── oauth.service.ts       # Google OAuth flow & callback
+│   │   │   ├── oauth.service.ts       # Google OAuth flow & callback (returns full user with lastLogin/avatar)
 │   │   │   └── index.ts
 │   │   ├── types/auth.types.ts
 │   │   └── index.ts
@@ -106,6 +113,24 @@ src/
     ├── middleware/   # auth-middleware, error-handler, validate-request, etc.
     ├── types/        # Express augmentation, API response types
     └── utils/        # token.ts, date.ts
+
+## User Model Fields
+Standard fields for the `User` model (keep in sync with `schema.prisma`):
+- `id`: UUID (String)
+- `email`: String (Unique, Lowercase)
+- `passwordHash`: String (Nullable for OAuth)
+- `firstName`: String (Nullable)
+- `lastName`: String (Nullable)
+- `avatarUrl`: String (Nullable, auto-fetched from Google)
+- `role`: `USER` | `ADMIN` (Default: `USER`)
+- `provider`: `LOCAL` | `GOOGLE` (Default: `LOCAL`)
+- `isEmailVerified`: Boolean (Default: `false`)
+- `twoFactorEnabled`: Boolean (Default: `false`)
+- `tokenVersion`: Int (Global session kill switch)
+- `isPremium`: Boolean (Premium status)
+- `premiumUntil`: DateTime (Expiration)
+- `lastLoginAt`: DateTime
+- `createdAt`, `updatedAt`
 ```
 
 ## Frontend Architecture (auth-frontend/src)
@@ -144,7 +169,7 @@ features/
   - `tokenVersion` in User table acts as a global session kill switch.
   - Specific sessions can be revoked by deleting the `refreshToken` record in DB.
 - **Google OAuth Integration**:
-  - **Auto-Registration**: New Google users are automatically registered with `provider: GOOGLE` and `isEmailVerified: true`.
+  - **Auto-Registration**: New Google users are automatically registered with `provider: GOOGLE`, `isEmailVerified: true`, and **automatic profile picture (avatarUrl) fetching**.
   - **Provider Isolation**: Users authenticated via OAuth cannot use password-based login and vice versa.
   - **State Parameter Protection**: JWT-encoded state parameters prevent CSRF attacks during OAuth flow.
   - **Secure Redirects**: OAuth flow uses secure redirects with proper state verification.
@@ -319,7 +344,10 @@ All API endpoints return responses in a standardized JSON format using the `ApiR
 {
   "success": true,
   "message": "Operation completed successfully",
-  "data": { ... },
+  "data": { 
+    "user": { "id", "email", ..., "lastLoginAt", "tokenVersion", "avatarUrl", "createdAt" },
+    "tokens": { "accessToken", ... }
+  },
   "error": null
 }
 ```
@@ -362,19 +390,24 @@ Controllers use the following standardized helpers provided by `responseHandlerM
 ## Fullstack Integration Context
 
 ### Authentication Flow
-1. **Login**: Frontend calls `/auth/login`. On success, tokens are stored in Zustand.
-2. **Persistence**: `refreshToken` is stored in an **HTTP-Only Cookie** (Secure/SameSite: None for dev cross-origin).
-3. **Authorization**: `accessToken` is sent in the `Authorization: Bearer <token>` header for all protected requests.
-4. **Auto-Refresh**: Axios interceptor catches 401 errors and calls `/auth/refresh-token` to get new tokens.
-5. **2FA**: If login returns `requires2FA: true`, frontend switches to OTP input.
-6. **Google OAuth**: Frontend redirects to `/api/v1/auth/google`. Backend handles callback and redirects back to frontend with tokens.
+1. **Instant App Load**: Frontend starts immediately using persisted authentication state from localStorage (Zustand persist middleware).
+2. **Background Verification**: Token validity is verified asynchronously without blocking UI.
+3. **Login**: Frontend calls `/auth/login`. On success, tokens are stored in Zustand.
+4. **Persistence**: `refreshToken` is stored in an **HTTP-Only Cookie** (Secure/SameSite: None for dev cross-origin).
+5. **Authorization**: `accessToken` is sent in the `Authorization: Bearer <token>` header for all protected requests.
+6. **Auto-Refresh**: Axios interceptor catches 401 errors and calls `/auth/refresh-token` to get new tokens.
+7. **2FA**: If login returns `requires2FA: true`, frontend switches to OTP input.
+8. **Google OAuth**: Frontend redirects to `/api/v1/auth/google`. Backend handles callback and redirects back to frontend with tokens.
 
 ### Configuration
 - **Backend**: `FRONTEND_URL` must match the frontend dev server URL (usually `http://localhost:5173`).
 - **Frontend**: `VITE_API_URL` must point to the backend API root.
 
 ### Important Global Patterns
-1. **Auth Store Access**: Use `window.__authStore` for accessing state in non-React files (like Axios config).
-2. **Error Format**: Both sides must adhere to the `ApiResponse<T>` structure.
-3. **Role Enforcement**: RBAC is handled via `requireRole` on backend and `AdminRoute` on frontend.
-4. **Payment Flow**: Frontend initiates checkout -> user pays -> gateway notifies backend via webhook -> backend upgrades user and increments `tokenVersion` -> frontend refreshes token automatically.
+1. **Instant Auth UX**: Frontend renders immediately with persisted state; no loading screens for returning users.
+2. **Persist Middleware**: Zustand persist middleware handles authentication state restoration from localStorage on app start.
+3. **Background Verification**: Token validation occurs asynchronously without blocking UI.
+4. **Auth Store Access**: Use `window.__authStore` for accessing state in non-React files (like Axios config).
+5. **Error Format**: Both sides must adhere to the `ApiResponse<T>` structure.
+6. **Role Enforcement**: RBAC is handled via `requireRole` on backend and `AdminRoute` on frontend.
+7. **Payment Flow**: Frontend initiates checkout -> user pays -> gateway notifies backend via webhook -> backend upgrades user and increments `tokenVersion` -> frontend refreshes token automatically.

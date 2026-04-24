@@ -6,6 +6,7 @@ export interface CreateUserInput {
   passwordHash?: string;
   firstName?: string;
   lastName?: string;
+  avatarUrl?: string;
   role?: Role;
   provider?: Provider;
 }
@@ -14,6 +15,7 @@ export interface UpdateUserInput {
   email?: string;
   firstName?: string;
   lastName?: string;
+  avatarUrl?: string;
 }
 
 export interface UserResponse {
@@ -21,6 +23,7 @@ export interface UserResponse {
   email: string;
   firstName: string | null;
   lastName: string | null;
+  avatarUrl: string | null;
   role: Role;
   provider: Provider;
   isEmailVerified: boolean;
@@ -35,6 +38,7 @@ export interface PublicUserResponse {
   email: string;
   firstName: string | null;
   lastName: string | null;
+  avatarUrl: string | null;
 }
 
 export interface UserWithTokens extends UserResponse {

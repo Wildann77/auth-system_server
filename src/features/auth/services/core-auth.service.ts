@@ -78,21 +78,31 @@ export class CoreAuthService {
     }
 
     await userRepository.updateLastLogin(user.id);
+    const updatedUser = await userRepository.findById(user.id);
+
+    if (!updatedUser) {
+      throw new NotFoundError('User not found after update');
+    }
 
     const tokens = await this.generateTokens(user.id, user.email, user.role as string);
 
     return {
       user: {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role as string,
-        provider: user.provider,
-        isEmailVerified: user.isEmailVerified,
-        twoFactorEnabled: user.twoFactorEnabled,
-        isPremium: user.isPremium,
-        premiumUntil: user.premiumUntil,
+        id: updatedUser.id,
+        email: updatedUser.email,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        role: updatedUser.role as string,
+        provider: updatedUser.provider,
+        isEmailVerified: updatedUser.isEmailVerified,
+        twoFactorEnabled: updatedUser.twoFactorEnabled,
+        avatarUrl: updatedUser.avatarUrl,
+        isPremium: updatedUser.isPremium,
+        premiumUntil: updatedUser.premiumUntil,
+        lastLoginAt: updatedUser.lastLoginAt,
+        tokenVersion: updatedUser.tokenVersion,
+        createdAt: updatedUser.createdAt,
+        updatedAt: updatedUser.updatedAt,
       },
       tokens,
     };
@@ -171,9 +181,11 @@ export class CoreAuthService {
       provider: user.provider,
       isEmailVerified: user.isEmailVerified,
       twoFactorEnabled: user.twoFactorEnabled,
+      avatarUrl: user.avatarUrl,
       isPremium: user.isPremium,
       premiumUntil: user.premiumUntil,
       lastLoginAt: user.lastLoginAt,
+      tokenVersion: user.tokenVersion,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };

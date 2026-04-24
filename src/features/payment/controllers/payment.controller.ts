@@ -8,6 +8,12 @@ export class PaymentController {
   async initializePayment(req: Request<{}, {}, CheckoutInput>, res: Response): Promise<void> {
     const { amount, provider, orderType, items } = req.body;
     const userId = req.user!.id;
+    const userRole = req.user!.role;
+
+    if (userRole === 'ADMIN') {
+      res.status(403).apiError('Admin tidak diperbolehkan membeli paket premium. Admin bertugas untuk mengelola sistem.');
+      return;
+    }
 
     const session = await checkoutService.createPaymentSession(userId, amount, provider, orderType, items);
 

@@ -42,7 +42,7 @@ export class OAuthService {
         throw new BadRequestError('Invalid Google token');
       }
 
-      const { email, given_name: firstName, family_name: lastName } = payload;
+      const { email, given_name: firstName, family_name: lastName, picture: avatarUrl } = payload;
 
       let user = await userRepository.findByEmail(email);
 
@@ -51,10 +51,16 @@ export class OAuthService {
           email: email.toLowerCase(),
           firstName: firstName || undefined,
           lastName: lastName || undefined,
+          avatarUrl: avatarUrl || undefined,
           provider: 'GOOGLE',
           isEmailVerified: true,
         });
       } else {
+        // Update avatar if changed
+        if (user.avatarUrl !== avatarUrl) {
+          await userRepository.update(user.id, { avatarUrl });
+        }
+        
         if (!user.isEmailVerified) {
           await userRepository.verifyEmail(user.id);
         }
@@ -64,20 +70,32 @@ export class OAuthService {
         throw new BadRequestError('This email is already registered with a different provider');
       }
 
-      const tokens = await coreAuthService.generateTokens(user.id, user.email, user.role);
+      await userRepository.updateLastLogin(user.id);
+      const updatedUser = await userRepository.findById(user.id);
+
+      if (!updatedUser) {
+        throw new BadRequestError('User not found after update');
+      }
+
+      const tokens = await coreAuthService.generateTokens(updatedUser.id, updatedUser.email, updatedUser.role);
 
       return {
         user: {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          role: user.role,
-          provider: user.provider,
-          isEmailVerified: user.isEmailVerified,
-          twoFactorEnabled: user.twoFactorEnabled,
-          isPremium: user.isPremium,
-          premiumUntil: user.premiumUntil,
+          id: updatedUser.id,
+          email: updatedUser.email,
+          firstName: updatedUser.firstName,
+          lastName: updatedUser.lastName,
+          role: updatedUser.role,
+          provider: updatedUser.provider,
+          isEmailVerified: updatedUser.isEmailVerified,
+          twoFactorEnabled: updatedUser.twoFactorEnabled,
+          avatarUrl: updatedUser.avatarUrl,
+          isPremium: updatedUser.isPremium,
+          premiumUntil: updatedUser.premiumUntil,
+          lastLoginAt: updatedUser.lastLoginAt,
+          tokenVersion: updatedUser.tokenVersion,
+          createdAt: updatedUser.createdAt,
+          updatedAt: updatedUser.updatedAt,
         },
         tokens,
       };
