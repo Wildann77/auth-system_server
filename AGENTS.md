@@ -1,9 +1,8 @@
-# Fullstack Auth System (AGENTS.md)
+# Backend Auth System (AGENTS.md)
 
 ## Project Overview
-A comprehensive fullstack authentication system.
-- **Backend**: Node.js/TypeScript using Express, Prisma (PostgreSQL/Neon), JWT, 2FA (TOTP), Google OAuth, and premium subscription features.
-- **Frontend**: React/TypeScript using Vite, Tailwind CSS (shadcn/ui), Zustand, TanStack Query, and Axios.
+A comprehensive Node.js/TypeScript authentication backend.
+- **Technology**: Express, Prisma (PostgreSQL/Neon), JWT, 2FA (TOTP), Google OAuth, and premium subscription features.
 
 ## Commands
 
@@ -27,17 +26,6 @@ bun run prisma:migrate   # Run migrations (Prod)
 3. Run `bun run prisma:generate` (to update types)
 4. Update TS interfaces in `features/*/types/*.types.ts`
 5. Update DTO/Service mapping (e.g., `toUserResponse`)
-
-### Frontend (auth-frontend/)
-```bash
-bun dev          # Start dev server
-bun build        # Build with TypeScript check
-bun build:prod   # Production build (sets BUILD_MODE=prod)
-bun lint        # Run ESLint
-bun preview     # Preview built app
-```
-
-**Note**: Frontend scripts prepend `bun install` for dependency safety.
 
 ## Setup
 
@@ -133,26 +121,6 @@ Standard fields for the `User` model (keep in sync with `schema.prisma`):
 - `createdAt`, `updatedAt`
 ```
 
-## Frontend Architecture (auth-frontend/src)
-
-- **Entry**: `main.tsx` -> `App.tsx` -> `shared/routes/index.tsx`
-- **State**: Zustand (`features/*/store/*.store.ts`)
-- **API Client**: Axios with interceptors for auth refresh
-- **Data Fetching**: TanStack Query
-- **UI**: Radix UI + Tailwind CSS (shadcn/ui pattern, style: new-york)
-- **Routing**: React Router v6
-
-### Feature Structure
-```
-features/
-  auth/           # Login, Register, 2FA, password reset
-  user/           # Dashboard, user data
-  admin/          # User management, stats
-  payment/       # Premium features, checkout
-  settings/       # User settings, 2FA setup
-  content/        # Exclusive content
-```
-
 ## Key Patterns & Security
 
 - **Route & Controller Separation**: 
@@ -179,7 +147,7 @@ features/
   - **Obfuscation**: Forgot password requests return a success message even if the email is not found to prevent user enumeration.
 - **Role-Based Access Control (RBAC)**:
   - **requireRole Middleware**: Protects admin routes with role checks (403 Forbidden for insufficient permissions).
-  - **Admin Features**: Exclusive endpoints for user management (list, role update, delete) accessible only to ADMIN role.
+  - **Admin Features**: Exclusive endpoints for user management (list, role update, delete) accessible only to ADMIN role. List endpoint supports search and pagination.
   - **User Isolation**: Personal endpoints limited to own profile; no global user management for regular users.
 - **Premium Access Control**:
   - **requirePremium Middleware**: Protects premium routes with subscription checks (403 Forbidden for non-premium users).
@@ -387,27 +355,11 @@ Controllers use the following standardized helpers provided by `responseHandlerM
 - `res.apiError(message: string, code?: string)` - Creates error responses
 - `createPaginatedResponse<T>()` - Wraps paginated data for admin endpoints
 
-## Fullstack Integration Context
+## Integration Notes (for Frontend)
 
-### Authentication Flow
-1. **Instant App Load**: Frontend starts immediately using persisted authentication state from localStorage (Zustand persist middleware).
-2. **Background Verification**: Token validity is verified asynchronously without blocking UI.
-3. **Login**: Frontend calls `/auth/login`. On success, tokens are stored in Zustand.
-4. **Persistence**: `refreshToken` is stored in an **HTTP-Only Cookie** (Secure/SameSite: None for dev cross-origin).
-5. **Authorization**: `accessToken` is sent in the `Authorization: Bearer <token>` header for all protected requests.
-6. **Auto-Refresh**: Axios interceptor catches 401 errors and calls `/auth/refresh-token` to get new tokens.
-7. **2FA**: If login returns `requires2FA: true`, frontend switches to OTP input.
-8. **Google OAuth**: Frontend redirects to `/api/v1/auth/google`. Backend handles callback and redirects back to frontend with tokens.
-
-### Configuration
-- **Backend**: `FRONTEND_URL` must match the frontend dev server URL (usually `http://localhost:5173`).
-- **Frontend**: `VITE_API_URL` must point to the backend API root.
-
-### Important Global Patterns
-1. **Instant Auth UX**: Frontend renders immediately with persisted state; no loading screens for returning users.
-2. **Persist Middleware**: Zustand persist middleware handles authentication state restoration from localStorage on app start.
-3. **Background Verification**: Token validation occurs asynchronously without blocking UI.
-4. **Auth Store Access**: Use `window.__authStore` for accessing state in non-React files (like Axios config).
-5. **Error Format**: Both sides must adhere to the `ApiResponse<T>` structure.
-6. **Role Enforcement**: RBAC is handled via `requireRole` on backend and `AdminRoute` on frontend.
-7. **Payment Flow**: Frontend initiates checkout -> user pays -> gateway notifies backend via webhook -> backend upgrades user and increments `tokenVersion` -> frontend refreshes token automatically.
+### Authentication Strategy
+1. **Hybrid Tokens**: Backend issues `accessToken` (JSON) and `refreshToken` (HTTP-Only Cookie).
+2. **Cookie Options**: `refreshToken` is set with `httpOnly: true`, `secure: true` (in prod), `sameSite: 'strict'`, and `path: '/'`.
+3. **Token Versioning**: `tokenVersion` increments on critical changes (password change, premium upgrade), forcing all sessions to re-authenticate upon their next refresh.
+4. **CORS**: `FRONTEND_URL` must be correctly set in `.env` to allow cross-origin requests from the frontend.
+5. **Google OAuth**: Redirects back to `${FRONTEND_URL}/auth-success?token=${accessToken}` after successful login.

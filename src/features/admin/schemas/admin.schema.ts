@@ -11,6 +11,7 @@ export const adminUsersQuerySchema = z.object({
     role: z.enum(['USER', 'ADMIN']).optional(),
     isEmailVerified: z.string().optional(),
     provider: z.enum(['LOCAL', 'GOOGLE']).optional(),
+    search: z.string().optional(),
   }),
 });
 

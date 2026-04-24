@@ -89,11 +89,18 @@ export class UserRepository {
   }
 
   async findMany(filters: UserFilters, page = 1, limit = 10) {
-    const where: { role?: Role; isEmailVerified?: boolean; provider?: Provider } = {};
+    const where: any = {};
 
     if (filters.role) where.role = filters.role;
     if (filters.isEmailVerified !== undefined) where.isEmailVerified = filters.isEmailVerified;
     if (filters.provider) where.provider = filters.provider;
+    if (filters.search) {
+      where.OR = [
+        { email: { contains: filters.search, mode: 'insensitive' } },
+        { firstName: { contains: filters.search, mode: 'insensitive' } },
+        { lastName: { contains: filters.search, mode: 'insensitive' } },
+      ];
+    }
 
     const [users, total] = await Promise.all([
       prisma.user.findMany({ where, skip: (page - 1) * limit, take: limit, orderBy: { createdAt: 'desc' } }),
@@ -104,11 +111,18 @@ export class UserRepository {
   }
 
   async count(filters?: UserFilters) {
-    const where: { role?: Role; isEmailVerified?: boolean; provider?: Provider } = {};
+    const where: any = {};
 
     if (filters?.role) where.role = filters.role;
     if (filters?.isEmailVerified !== undefined) where.isEmailVerified = filters.isEmailVerified;
     if (filters?.provider) where.provider = filters.provider;
+    if (filters?.search) {
+      where.OR = [
+        { email: { contains: filters.search, mode: 'insensitive' } },
+        { firstName: { contains: filters.search, mode: 'insensitive' } },
+        { lastName: { contains: filters.search, mode: 'insensitive' } },
+      ];
+    }
 
     return prisma.user.count({ where });
   }

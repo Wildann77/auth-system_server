@@ -50,4 +50,5 @@ export interface UserFilters {
   role?: Role;
   isEmailVerified?: boolean;
   provider?: Provider;
+  search?: string;
 }

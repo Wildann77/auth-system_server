@@ -16,6 +16,7 @@ export class AdminController {
           ? false
           : undefined,
       provider: req.query.provider,
+      search: req.query.search,
     };
     const result = await userAdminService.getUsers(filters, page, limit);
     res.apiSuccess(createPaginatedResponse(result.users, result.total, result.page, result.limit), 'Users retrieved successfully');
