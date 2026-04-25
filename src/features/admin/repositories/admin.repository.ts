@@ -17,17 +17,19 @@ export class AdminRepository {
   }
 
   async getStats() {
-    const [totalUsers, adminUsers, userUsers, verifiedUsers, activeUsers] = await Promise.all([
+    const [totalUsers, adminCount, verifiedUsers, premiumCount] = await Promise.all([
       prisma.user.count(),
       prisma.user.count({ where: { role: 'ADMIN' } }),
-      prisma.user.count({ where: { role: 'USER' } }),
       prisma.user.count({ where: { isEmailVerified: true } }),
-      prisma.user.count({
-        where: { lastLoginAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
-      }),
+      prisma.user.count({ where: { isPremium: true } }),
     ]);
 
-    return { totalUsers, adminUsers, userUsers, verifiedUsers, activeUsers };
+    // Mocking usersByDay for now or querying if needed. We'll return an empty array or simple mock.
+    const usersByDay = [
+      { date: new Date().toISOString().split('T')[0], count: totalUsers }
+    ];
+
+    return { totalUsers, adminCount, verifiedUsers, premiumCount, usersByDay };
   }
 }
 

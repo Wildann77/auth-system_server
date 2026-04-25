@@ -9,6 +9,7 @@ export interface CreateUserInput {
   avatarUrl?: string;
   role?: Role;
   provider?: Provider;
+  isEmailVerified?: boolean;
 }
 
 export interface UpdateUserInput {

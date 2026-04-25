@@ -147,7 +147,7 @@ Standard fields for the `User` model (keep in sync with `schema.prisma`):
   - **Obfuscation**: Forgot password requests return a success message even if the email is not found to prevent user enumeration.
 - **Role-Based Access Control (RBAC)**:
   - **requireRole Middleware**: Protects admin routes with role checks (403 Forbidden for insufficient permissions).
-  - **Admin Features**: Exclusive endpoints for user management (list, role update, delete) accessible only to ADMIN role. List endpoint supports search and pagination.
+  - **Admin Features**: Exclusive endpoints for user management (list, role update, delete) accessible only to ADMIN role. List endpoint supports search and pagination. The dashboard stats endpoint (`/api/v1/admin/stats`) explicitly returns `adminCount` and `premiumCount` to match frontend interface expectations.
   - **User Isolation**: Personal endpoints limited to own profile; no global user management for regular users.
 - **Premium Access Control**:
   - **requirePremium Middleware**: Protects premium routes with subscription checks (403 Forbidden for non-premium users).
