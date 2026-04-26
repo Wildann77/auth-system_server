@@ -73,7 +73,7 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.apiSuccess({ tokens }, 'Password reset successfully');
+    res.apiSuccess({ accessToken: tokens.accessToken }, 'Password reset successfully');
   }
 
   async refreshToken(req: Request<{}, {}, RefreshTokenInput>, res: Response): Promise<void> {
@@ -140,7 +140,7 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.apiSuccess({ tokens }, 'Password changed successfully');
+    res.apiSuccess({ accessToken: tokens.accessToken }, 'Password changed successfully');
   }
 
   async getMe(req: Request, res: Response): Promise<void> {

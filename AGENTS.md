@@ -145,6 +145,9 @@ Standard fields for the `User` model (keep in sync with `schema.prisma`):
   - **Hashing**: Reset tokens are hashed with **SHA-256** before being stored in the database. Only the raw token is sent via email.
   - **Short Expiry**: Tokens expire in **15 minutes**.
   - **Obfuscation**: Forgot password requests return a success message even if the email is not found to prevent user enumeration.
+  - **Seamless Session Continuity**: Post-reset, the system immediately returns new tokens so the user is seamlessly logged in upon successful reset, preventing abrupt forced logouts on the active client.
+- **Seamless Session Continuity (Password Change)**:
+  - When changing passwords, old sessions are globally revoked but the backend immediately generates and returns a new `TokenResponse` (and updates the refresh token cookie) within the same transaction. This ensures the current device stays logged in seamlessly without returning a 401.
 - **Role-Based Access Control (RBAC)**:
   - **requireRole Middleware**: Protects admin routes with role checks (403 Forbidden for insufficient permissions).
   - **Admin Features**: Exclusive endpoints for user management (list, role update, delete) accessible only to ADMIN role. List endpoint supports search and pagination. The dashboard stats endpoint (`/api/v1/admin/stats`) explicitly returns `adminCount` and `premiumCount` to match frontend interface expectations.
