@@ -116,7 +116,8 @@ Standard fields for the `User` model (keep in sync with `schema.prisma`):
 - `twoFactorEnabled`: Boolean (Default: `false`)
 - `tokenVersion`: Int (Global session kill switch)
 - `isPremium`: Boolean (Premium status)
-- `premiumUntil`: DateTime (Expiration)
+- `autoRenew`: Boolean (Default: `true`. Indicates if subscription should renew)
+- `premiumUntil`: DateTime (Expiration date of the premium status)
 - `lastLoginAt`: DateTime
 - `createdAt`, `updatedAt`
 ```
@@ -156,6 +157,7 @@ Standard fields for the `User` model (keep in sync with `schema.prisma`):
   - **requirePremium Middleware**: Protects premium routes with subscription checks (403 Forbidden for non-premium users).
   - **Premium Upgrade Flow**: Users can purchase premium status through payment gateways (Midtrans/Stripe).
   - **Automatic Activation**: Premium status is granted automatically upon successful payment via webhook processing.
+  - **Cancellation Strategy (Grace Period)**: Users can cancel via `/api/v1/payment/cancel`. This sets `autoRenew: false` locally and updates the gateway (e.g., `cancel_at_period_end: true` in Stripe) without immediately revoking `isPremium` status until `premiumUntil` is reached.
   - **Token Refresh**: Premium upgrades trigger token version increment, forcing users to re-authenticate and receive updated tokens.
   - **OAuth Compatibility**: Premium upgrades work for all user types (LOCAL and GOOGLE providers).
 - **Structured Logging**: All logs MUST use the `logger` utility from `@/shared/utils/logger`.
@@ -302,6 +304,7 @@ export type ExampleInput = z.infer<typeof exampleSchema>['body'];
 /api/v1/user/me          - Personal user profile management
 /api/v1/admin/*          - Admin management endpoints (requires ADMIN role)
 /api/v1/payment/checkout  - Initialize payment (requires AUTH)
+/api/v1/payment/cancel    - Cancel active premium subscription (requires AUTH)
 /api/v1/payment/webhook   - Midtrans Gateway callback (PUBLIC)
 /api/v1/payment/webhook-stripe - Stripe Gateway callback (PUBLIC)
 /api/v1/content/exclusive - Premium-only content (requires PREMIUM status)
