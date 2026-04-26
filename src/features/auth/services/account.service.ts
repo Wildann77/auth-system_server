@@ -7,6 +7,8 @@ import { sendVerificationEmail, sendPasswordResetEmail } from '@/lib/mail';
 import { env } from '@/config/env';
 import { isExpired } from '@/shared/utils/date';
 import { UnauthorizedError, BadRequestError, NotFoundError } from '@/shared/middleware/error-handler';
+import { TokenResponse } from '@/features/auth/types/auth.types';
+import { coreAuthService } from '@/features/auth/services/core-auth.service';
 
 export class AccountService {
   async verifyEmail(token: string): Promise<void> {
@@ -51,7 +53,7 @@ export class AccountService {
     await sendPasswordResetEmail(email, token, env.FRONTEND_URL);
   }
 
-  async resetPassword(token: string, password: string): Promise<void> {
+  async resetPassword(token: string, password: string): Promise<TokenResponse> {
     return prisma.$transaction(async (tx) => {
       const tokenRecord = await authRepository.findPasswordResetToken(token, tx);
 
@@ -72,10 +74,14 @@ export class AccountService {
       await userRepository.updatePassword(tokenRecord.user.id, passwordHash, tx);
       await authRepository.deletePasswordResetToken(token, tx);
       await authRepository.revokeAllUserRefreshTokens(tokenRecord.user.id, tx);
+
+      const user = await userRepository.findByIdWithTokenVersion(tokenRecord.user.id, tx);
+      if (!user) throw new NotFoundError('User not found after reset');
+      return coreAuthService.generateTokens(user.id, user.email, (user.role as any).name || user.role, tx);
     });
   }
 
-  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<TokenResponse> {
     return prisma.$transaction(async (tx) => {
       const user = await userRepository.findById(userId, tx);
 
@@ -92,6 +98,10 @@ export class AccountService {
 
       await userRepository.updatePassword(userId, passwordHash, tx);
       await authRepository.revokeAllUserRefreshTokens(userId, tx);
+
+      const updatedUser = await userRepository.findByIdWithTokenVersion(userId, tx);
+      if (!updatedUser) throw new NotFoundError('User not found after update');
+      return coreAuthService.generateTokens(updatedUser.id, updatedUser.email, (updatedUser.role as any).name || updatedUser.role, tx);
     });
   }
 }
