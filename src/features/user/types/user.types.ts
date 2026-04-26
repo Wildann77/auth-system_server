@@ -29,6 +29,10 @@ export interface UserResponse {
   provider: Provider;
   isEmailVerified: boolean;
   twoFactorEnabled: boolean;
+  isPremium: boolean;
+  autoRenew: boolean;
+  premiumUntil: Date | null;
+  tokenVersion: number;
   lastLoginAt: Date | null;
   createdAt: Date;
   updatedAt: Date;

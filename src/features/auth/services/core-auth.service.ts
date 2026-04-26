@@ -43,6 +43,17 @@ export class CoreAuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        provider: user.provider,
+        isEmailVerified: user.isEmailVerified,
+        twoFactorEnabled: user.twoFactorEnabled,
+        avatarUrl: user.avatarUrl,
+        isPremium: user.isPremium,
+        autoRenew: user.autoRenew,
+        premiumUntil: user.premiumUntil,
+        lastLoginAt: user.lastLoginAt,
+        tokenVersion: user.tokenVersion,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
       },
     };
   }
@@ -98,6 +109,7 @@ export class CoreAuthService {
         twoFactorEnabled: updatedUser.twoFactorEnabled,
         avatarUrl: updatedUser.avatarUrl,
         isPremium: updatedUser.isPremium,
+        autoRenew: updatedUser.autoRenew,
         premiumUntil: updatedUser.premiumUntil,
         lastLoginAt: updatedUser.lastLoginAt,
         tokenVersion: updatedUser.tokenVersion,
@@ -157,15 +169,7 @@ export class CoreAuthService {
     }
   }
 
-  async getCurrentUser(userId: string): Promise<{
-    id: string;
-    email: string;
-    firstName: string | null;
-    lastName: string | null;
-    role: string;
-    isEmailVerified: boolean;
-    twoFactorEnabled: boolean;
-  }> {
+  async getCurrentUser(userId: string): Promise<AuthResponse['user']> {
     const user = await userRepository.findById(userId);
 
     if (!user) {
@@ -183,6 +187,7 @@ export class CoreAuthService {
       twoFactorEnabled: user.twoFactorEnabled,
       avatarUrl: user.avatarUrl,
       isPremium: user.isPremium,
+      autoRenew: user.autoRenew,
       premiumUntil: user.premiumUntil,
       lastLoginAt: user.lastLoginAt,
       tokenVersion: user.tokenVersion,

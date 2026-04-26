@@ -16,6 +16,7 @@ export interface AuthResponse {
     twoFactorEnabled: boolean;
     avatarUrl: string | null;
     isPremium: boolean;
+    autoRenew: boolean;
     premiumUntil: Date | null;
     lastLoginAt: Date | null;
     tokenVersion: number;

@@ -91,6 +91,7 @@ export class OAuthService {
           twoFactorEnabled: updatedUser.twoFactorEnabled,
           avatarUrl: updatedUser.avatarUrl,
           isPremium: updatedUser.isPremium,
+          autoRenew: updatedUser.autoRenew,
           premiumUntil: updatedUser.premiumUntil,
           lastLoginAt: updatedUser.lastLoginAt,
           tokenVersion: updatedUser.tokenVersion,
