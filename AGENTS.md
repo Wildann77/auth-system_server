@@ -158,6 +158,7 @@ Standard fields for the `User` model (keep in sync with `schema.prisma`):
   - **Premium Upgrade Flow**: Users can purchase premium status through payment gateways (Midtrans/Stripe).
   - **Automatic Activation**: Premium status is granted automatically upon successful payment via webhook processing.
   - **Cancellation Strategy (Grace Period)**: Users can cancel via `/api/v1/payment/cancel`. This sets `autoRenew: false` locally and updates the gateway (e.g., `cancel_at_period_end: true` in Stripe) without immediately revoking `isPremium` status until `premiumUntil` is reached.
+  - **Expiration Enforcement**: Premium expiration is strictly enforced dynamically upon user access (`login` and `getCurrentUser` routes). If `premiumUntil` has passed, `isPremium` and `autoRenew` are instantly set to `false`.
   - **Token Refresh**: Premium upgrades trigger token version increment, forcing users to re-authenticate and receive updated tokens.
   - **OAuth Compatibility**: Premium upgrades work for all user types (LOCAL and GOOGLE providers).
 - **Structured Logging**: All logs MUST use the `logger` utility from `@/shared/utils/logger`.

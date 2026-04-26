@@ -95,6 +95,15 @@ export class CoreAuthService {
       throw new NotFoundError('User not found after update');
     }
 
+    if (updatedUser.isPremium && updatedUser.premiumUntil && isExpired(updatedUser.premiumUntil)) {
+      await userRepository.update(updatedUser.id, {
+        isPremium: false,
+        autoRenew: false,
+      });
+      (updatedUser as any).isPremium = false;
+      (updatedUser as any).autoRenew = false;
+    }
+
     const tokens = await this.generateTokens(user.id, user.email, user.role as string);
 
     return {
@@ -174,6 +183,15 @@ export class CoreAuthService {
 
     if (!user) {
       throw new NotFoundError('User not found');
+    }
+
+    if (user.isPremium && user.premiumUntil && isExpired(user.premiumUntil)) {
+      await userRepository.update(user.id, {
+        isPremium: false,
+        autoRenew: false,
+      });
+      user.isPremium = false;
+      user.autoRenew = false;
     }
 
     return {

@@ -17,6 +17,9 @@ export interface UpdateUserInput {
   firstName?: string;
   lastName?: string;
   avatarUrl?: string;
+  isPremium?: boolean;
+  autoRenew?: boolean;
+  premiumUntil?: Date | null;
 }
 
 export interface UserResponse {
