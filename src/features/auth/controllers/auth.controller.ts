@@ -63,8 +63,17 @@ export class AuthController {
 
   async resetPassword(req: Request<{}, {}, ResetPasswordInput>, res: Response): Promise<void> {
     const { token, password } = req.body;
-    await accountService.resetPassword(token, password);
-    res.apiSuccess(null, 'Password reset successfully');
+    const tokens = await accountService.resetPassword(token, password);
+    
+    res.cookie('refreshToken', tokens.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    res.apiSuccess({ tokens }, 'Password reset successfully');
   }
 
   async refreshToken(req: Request<{}, {}, RefreshTokenInput>, res: Response): Promise<void> {
@@ -121,8 +130,17 @@ export class AuthController {
 
   async changePassword(req: Request<{}, {}, ChangePasswordInput>, res: Response): Promise<void> {
     const { currentPassword, newPassword } = req.body;
-    await accountService.changePassword(req.user!.id, currentPassword, newPassword);
-    res.apiSuccess(null, 'Password changed successfully');
+    const tokens = await accountService.changePassword(req.user!.id, currentPassword, newPassword);
+    
+    res.cookie('refreshToken', tokens.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    res.apiSuccess({ tokens }, 'Password changed successfully');
   }
 
   async getMe(req: Request, res: Response): Promise<void> {
