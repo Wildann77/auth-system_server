@@ -4,12 +4,13 @@ import { OrderStatus } from '@prisma/client';
 import { stripe } from '@/lib/stripe';
 import { BadRequestError, AppError } from '@/shared/middleware/error-handler';
 import { logger } from '@/shared/utils/logger';
+import { env } from '@/config';
 import { subscriptionService } from './subscription.service';
 
 export class StripeWebhookService {
   async handleWebhook(signature: string, payload: any, requestId?: string) {
     if (!stripe) throw new AppError('Stripe is not configured', 500, 'STRIPE_CONFIG_ERROR');
-    const webhookSecret = process.env.WEBHOOK_SECRET_STRIPE || '';
+    const webhookSecret = env.WEBHOOK_SECRET_STRIPE;
     let event: any;
 
     try {

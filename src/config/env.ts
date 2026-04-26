@@ -38,6 +38,17 @@ const envSchema = z.object({
 
   // 2FA
   TWO_FACTOR_APP_NAME: z.string().default('AuthSystem'),
+
+  // Midtrans
+  MERCHANT_ID_MIDTRANS: z.string(),
+  CLIENT_KEY_MIDTRANS: z.string(),
+  SERVER_KEY_MIDTRANS: z.string(),
+  MIDTRANS_IS_PRODUCTION: z.string().default('false'),
+
+  // Stripe
+  PUBLISHABLE_KEY_STRIPE: z.string(),
+  SECRET_KEY_STRIPE: z.string(),
+  WEBHOOK_SECRET_STRIPE: z.string().transform((val) => val.trim()),
 });
 
 const parseResult = envSchema.safeParse(process.env);

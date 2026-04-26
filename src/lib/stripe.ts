@@ -1,9 +1,7 @@
 import Stripe from 'stripe';
-import dotenv from 'dotenv';
+import { env } from '@/config';
 
-dotenv.config();
-
-const stripeSecretKey = process.env.SECRET_KEY_STRIPE || '';
+const stripeSecretKey = env.SECRET_KEY_STRIPE;
 
 export const stripe = stripeSecretKey && !stripeSecretKey.includes('your-stripe') 
   ? new Stripe(stripeSecretKey, {

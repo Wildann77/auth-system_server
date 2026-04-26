@@ -235,6 +235,7 @@ Standard fields for the `User` model (keep in sync with `schema.prisma`):
 - **Import Order**: Group imports by external libraries first, then internal modules.
 - **No Relative Paths**: Never use `../` or `./` for internal imports.
 - **No Manual Logging**: `console.log` and `console.error` are forbidden. Always use the `logger` utility from `@/shared/utils/logger` to ensure logs are structured (JSON) and contain trace IDs.
+- **Environment Variable Usage**: Always import and use the `env` object from `@/config` instead of accessing `process.env` directly. This ensures all variables are type-safe and validated against the Zod schema defined in `src/config/env.ts`.
 
 ### TypeScript Guidelines
 
@@ -286,6 +287,7 @@ export type ExampleInput = z.infer<typeof exampleSchema>['body'];
 
 ### Security Best Practices
 - Never log sensitive data (passwords, tokens, keys).
+- **Environment Validation**: All secrets and configuration must be registered in `src/config/env.ts`. The system uses Zod to validate these at startup. Webhook secrets are automatically trimmed to prevent whitespace errors.
 - Use environment variables for all secrets.
 - Implement proper input validation with Zod schemas.
 - Follow the established authentication and authorization patterns.
