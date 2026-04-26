@@ -55,6 +55,7 @@ model User {
   twoFactorSecret  String?
   tokenVersion     Int       @default(0)
   isPremium        Boolean   @default(false)
+  autoRenew        Boolean   @default(true)
   premiumUntil     DateTime?
   lastLoginAt      DateTime?
 
