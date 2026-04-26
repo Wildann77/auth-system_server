@@ -56,6 +56,15 @@ export class PaymentController {
 
     res.status(200).apiSuccess(null, 'Payment simulated successfully. User upgraded if applicable.');
   }
+
+  async cancelSubscription(req: Request, res: Response): Promise<void> {
+    const userId = req.user!.id;
+    const { subscriptionService } = await import('@/features/payment/services/subscription.service');
+    
+    await subscriptionService.cancelSubscription(userId);
+    
+    res.status(200).apiSuccess(null, 'Subscription cancelled successfully. You will remain premium until the end of your billing period.');
+  }
 }
 
 export const paymentController = new PaymentController();

@@ -83,6 +83,11 @@ export class UserRepository {
     return db.user.update({ where: { id }, data: { lastLoginAt: new Date() } });
   }
 
+  async setAutoRenewStatus(id: string, autoRenew: boolean, tx?: Prisma.TransactionClient) {
+    const db = tx || prisma;
+    return db.user.update({ where: { id }, data: { autoRenew } });
+  }
+
   async delete(id: string, tx?: Prisma.TransactionClient) {
     const db = tx || prisma;
     return db.user.delete({ where: { id } });

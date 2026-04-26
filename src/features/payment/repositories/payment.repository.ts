@@ -44,6 +44,20 @@ export class PaymentRepository {
     return db.user.findUnique({ where: { id } });
   }
 
+  async findLatestPremiumOrder(userId: string, tx?: Prisma.TransactionClient) {
+    const db = tx || prisma;
+    return db.order.findFirst({
+      where: {
+        userId,
+        orderType: 'PREMIUM_UPGRADE',
+        status: 'SUCCESS'
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+  }
+
   async updateOrderStatus(
     id: string,
     status: OrderStatus,
