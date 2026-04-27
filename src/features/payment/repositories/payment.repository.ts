@@ -1,12 +1,13 @@
 import { prisma } from '@/config/db';
 import { OrderStatus, Prisma } from '@prisma/client';
+import { ORDER_TYPE, ORDER_STATUS } from '@/shared/constants';
 
 export class PaymentRepository {
   async createOrder(
     data: {
       userId: string;
       amount: number;
-      orderType?: 'GENERAL' | 'PREMIUM_UPGRADE';
+      orderType?: typeof ORDER_TYPE[keyof typeof ORDER_TYPE];
       items?: any;
       snapToken?: string;
       snapUrl?: string;
@@ -49,8 +50,8 @@ export class PaymentRepository {
     return db.order.findFirst({
       where: {
         userId,
-        orderType: 'PREMIUM_UPGRADE',
-        status: 'SUCCESS'
+        orderType: ORDER_TYPE.PREMIUM_UPGRADE,
+        status: ORDER_STATUS.SUCCESS
       },
       orderBy: {
         createdAt: 'desc'

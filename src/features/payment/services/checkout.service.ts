@@ -5,27 +5,27 @@ import { snap } from '@/lib/midtrans';
 import { stripe } from '@/lib/stripe';
 import { NotFoundError, ConflictError, BadRequestError, AppError } from '@/shared/middleware/error-handler';
 
-import { PAYMENT_CONSTANTS } from '@/features/payment/constants';
+import { ORDER_TYPE, PAYMENT_PROVIDER, FINANCIALS } from '@/shared/constants';
 
 export class CheckoutService {
   async createPaymentSession(
     userId: string,
     amount: number,
-    provider: 'midtrans' | 'stripe' = 'midtrans',
-    orderType: 'GENERAL' | 'PREMIUM_UPGRADE' = 'GENERAL',
+    provider: typeof PAYMENT_PROVIDER[keyof typeof PAYMENT_PROVIDER] = PAYMENT_PROVIDER.MIDTRANS,
+    orderType: typeof ORDER_TYPE[keyof typeof ORDER_TYPE] = ORDER_TYPE.GENERAL,
     items?: any
   ) {
-    if (orderType === 'PREMIUM_UPGRADE') {
+    if (orderType === ORDER_TYPE.PREMIUM_UPGRADE) {
       const user = await paymentRepository.findUserById(userId);
       if (!user) throw new NotFoundError('User not found');
       if (user.isPremium) throw new ConflictError('User is already premium');
 
-      const premiumPrice = PAYMENT_CONSTANTS.PREMIUM_UPGRADE_PRICE;
+      const premiumPrice = FINANCIALS.PREMIUM_UPGRADE_PRICE;
       if (amount !== premiumPrice) throw new BadRequestError('Invalid premium upgrade amount');
       amount = premiumPrice;
     }
 
-    if (provider === 'midtrans') {
+    if (provider === PAYMENT_PROVIDER.MIDTRANS) {
       return this.createMidtransSession(userId, amount, orderType, items);
     } else {
       if (!stripe) throw new AppError('Stripe is not configured', 500, 'STRIPE_CONFIG_ERROR');
@@ -36,7 +36,7 @@ export class CheckoutService {
   private async createMidtransSession(
     userId: string,
     amount: number,
-    orderType: 'GENERAL' | 'PREMIUM_UPGRADE',
+    orderType: typeof ORDER_TYPE[keyof typeof ORDER_TYPE],
     items?: any
   ) {
     const order = await paymentRepository.createOrder({ userId, amount, orderType, items });
@@ -51,14 +51,14 @@ export class CheckoutService {
     }
   }
 
-  private async createStripeSession(userId: string, amount: number, orderType: 'GENERAL' | 'PREMIUM_UPGRADE') {
+  private async createStripeSession(userId: string, amount: number, orderType: typeof ORDER_TYPE[keyof typeof ORDER_TYPE]) {
     const order = await paymentRepository.createOrder({ userId, amount, orderType });
     try {
       const session = await stripe!.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [{
           price_data: {
-            currency: 'idr',
+            currency: FINANCIALS.CURRENCY.toLowerCase(),
             product_data: { name: `Order ${order.id}` },
             unit_amount: amount * 100,
           },

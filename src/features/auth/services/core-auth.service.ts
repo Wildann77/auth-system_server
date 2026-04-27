@@ -10,6 +10,7 @@ import { env } from '@/config/env';
 import { isExpired } from '@/shared/utils/date';
 import { UnauthorizedError, BadRequestError, NotFoundError, ConflictError } from '@/shared/middleware/error-handler';
 import { AuthResponse, TokenResponse } from '@/features/auth/types/auth.types';
+import { AUTH_PROVIDER } from '@/shared/constants';
 
 export class CoreAuthService {
   async register(
@@ -30,7 +31,7 @@ export class CoreAuthService {
       passwordHash,
       firstName,
       lastName,
-      provider: 'LOCAL',
+      provider: AUTH_PROVIDER.LOCAL,
     });
 
     const verificationToken = generateVerificationToken(user.id, user.email);
@@ -64,7 +65,7 @@ export class CoreAuthService {
       throw new UnauthorizedError('Invalid credentials');
     }
 
-    if (user.provider !== 'LOCAL') {
+    if (user.provider !== AUTH_PROVIDER.LOCAL) {
       throw new UnauthorizedError('Please use OAuth login for this account');
     }
 
