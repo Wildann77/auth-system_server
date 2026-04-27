@@ -18,7 +18,6 @@ export class SubscriptionService {
         isPremium: true,
         autoRenew: true,
         premiumUntil,
-        tokenVersion: { increment: 1 },
       },
     });
   }
