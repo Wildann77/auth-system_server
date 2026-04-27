@@ -286,6 +286,7 @@ export type ExampleInput = z.infer<typeof exampleSchema>['body'];
 - **Prisma Integration**: Common Prisma errors (e.g., `P2002` - Duplicate, `P2025` - Not Found) are automatically mapped to structured responses by the global handler.
 - **No Manual Try-Catch**: Avoid `try-catch` blocks in controllers; let the `asyncHandler` and global error middleware handle it.
 - **Frontend Integration**: Backend must always return a human-readable `message` in the `ApiResponse` (especially for 4xx errors), as the frontend uses a global interceptor to automatically display these messages via Toast.
+- **Shared Constants (CRITICAL)**: Use centralized constants in `src/shared/constants/` for Roles (`USER_ROLE`), Providers (`AUTH_PROVIDER`), and Payments (`ORDER_TYPE`, `ORDER_STATUS`, `FINANCIALS`). Strictly avoid using manual string literals for business logic or identity.
 
 
 ### Security Best Practices

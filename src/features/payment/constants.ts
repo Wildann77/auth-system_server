@@ -1,3 +1,0 @@
-export const PAYMENT_CONSTANTS = {
-  PREMIUM_UPGRADE_PRICE: 99000,
-};
