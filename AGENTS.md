@@ -97,10 +97,13 @@ src/
 │       ├── types/user.types.ts
 │       └── index.ts
 ├── lib/              # jwt.ts, password.ts, mail.ts, otp.ts, midtrans.ts/stripe.ts
-└── shared/
-    ├── middleware/   # auth-middleware, error-handler, validate-request, etc.
-    ├── types/        # Express augmentation, API response types
-    └── utils/        # token.ts, date.ts
+├── shared/
+│   ├── middleware/   # auth-middleware, error-handler, validate-request, etc.
+│   ├── types/        # Express augmentation, API response types
+│   └── utils/        # token.ts, date.ts
+├── app.ts            # Express application setup
+└── server.ts         # Server entry point & startup logic
+
 
 ## User Model Fields
 Standard fields for the `User` model (keep in sync with `schema.prisma`):
