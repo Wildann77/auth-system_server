@@ -1,226 +1,120 @@
-# Auth System
+# Auth System - Backend
 
-A secure, feature-based Node.js/TypeScript authentication system built with Express, Prisma, PostgreSQL (Neon), JWT, and 2FA support.
-
-## Description
-
-This authentication system provides a robust foundation for user management with features like email verification, password reset, two-factor authentication, and secure token management. It uses a hybrid JWT strategy with access and refresh tokens, and includes role-based access control.
+A comprehensive Node.js/TypeScript authentication backend featuring Express, Prisma (PostgreSQL/Neon), JWT, 2FA (TOTP), Google OAuth, and premium subscription features with Midtrans & Stripe integration.
 
 ## Features
 
-- 🔐 User registration and login with email verification
-- 📧 Password reset functionality
-- 🔑 JWT-based authentication with access and refresh tokens
-- 🛡️ Two-factor authentication (2FA) with TOTP
-- 🌐 OAuth integration (Google)
-- 👤 Role-based access control (User/Admin)
-- 🔄 Token rotation and revocation
-- 📱 Session management with device tracking
-- 🚀 Feature-based architecture for scalability
+- 🔐 **Advanced Auth**: Secure registration & login with mandatory email verification.
+- 🔑 **Hybrid Token Strategy**: Access tokens (JSON) + Refresh tokens (HTTP-Only Cookie) with rotation.
+- 🛡️ **Two-Factor Authentication**: TOTP-based 2FA (Google Authenticator, etc.).
+- 🌐 **Google OAuth**: Seamless social login with automatic registration and avatar fetching.
+- 💎 **Premium Subscription**: Tiered access with Midtrans (Local/IDR) and Stripe (Global) integration.
+- 👤 **RBAC & Admin**: Comprehensive role-based access control and admin dashboard for user management.
+- 🚀 **Performance & Security**: Tiered rate limiting (Global, Auth, Payment) and ACID-compliant transactions.
+- 📝 **Structured Logging**: JSON-formatted logs with request tracing (requestId) for observability.
 
 ## Tech Stack
 
-- **Backend**: Node.js, TypeScript, Express
-- **Database**: PostgreSQL (via Neon), Prisma ORM
-- **Authentication**: JWT, bcryptjs, otplib
-- **Email**: Nodemailer
-- **Validation**: Zod
-- **Development**: ts-node-dev, ESLint
+- **Runtime**: [Bun](https://bun.sh/) (Fast all-in-one JavaScript runtime)
+- **Framework**: Express.js with TypeScript
+- **ORM**: Prisma (PostgreSQL/Neon)
+- **Auth**: JWT, otplib (2FA), OAuth2
+- **Payments**: Midtrans & Stripe
+- **Validation**: Zod (Schema-based validation)
+- **Logging**: Structured JSON logging with custom utility
 
 ## Prerequisites
 
-- Node.js (v18 or higher)
-- PostgreSQL database (Neon recommended)
-- Docker (optional, for local PostgreSQL)
+- [Bun](https://bun.sh/) installed locally
+- PostgreSQL database (Local Docker or [Neon.tech](https://neon.tech))
+- Google OAuth Credentials (for social login)
+- Midtrans/Stripe API Keys (for payments)
 
-## Installation
+## Getting Started
 
-1. Clone the repository:
+1. **Clone & Install**:
    ```bash
    git clone <repository-url>
    cd auth-system
+   bun install
    ```
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Set up the database:
-   - Start PostgreSQL via Docker (optional):
-     ```bash
-     docker compose up -d
-     ```
-   - Or use a cloud database like Neon
-
-4. Configure environment variables:
+2. **Environment Setup**:
    ```bash
    cp .env.example .env
-   # Edit .env with your configuration
+   # Configure your variables in .env
    ```
 
-5. Set up the database schema:
+3. **Database Initialization**:
    ```bash
-   npm run prisma:generate
-   npm run prisma:push
+   bun run prisma:generate
+   bun run prisma:push
    ```
 
-## Configuration
+4. **Development Mode**:
+   ```bash
+   bun run dev
+   ```
 
-Create a `.env` file based on `.env.example` with the following variables:
+## Available Commands
 
-### Database
-- `DATABASE_URL`: PostgreSQL connection string
-
-### JWT
-- `JWT_ACCESS_SECRET`: Secret key for access tokens (min 32 chars)
-- `JWT_REFRESH_SECRET`: Secret key for refresh tokens (min 32 chars)
-- `JWT_ACCESS_EXPIRY`: Access token expiry (default: "15m")
-- `JWT_REFRESH_EXPIRY`: Refresh token expiry (default: "7d")
-
-### Email (SMTP)
-- `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`: SMTP configuration
-- `SMTP_USER`, `SMTP_PASS`: Email credentials
-- `SMTP_FROM`: Sender email address
-
-### OAuth (Google)
-- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`: Google OAuth credentials
-- `GOOGLE_CALLBACK_URL`: OAuth callback URL
-
-### Application
-- `NODE_ENV`: Environment (development/production)
-- `PORT`: Server port (default: 3000)
-- `FRONTEND_URL`: Frontend application URL
-
-### 2FA
-- `TWO_FACTOR_APP_NAME`: App name for 2FA (default: "AuthSystem")
-
-## Usage
-
-### Development
-```bash
-npm run dev
-```
-
-### Production
-```bash
-npm run build
-npm start
-```
-
-### Linting
-```bash
-npm run lint
-```
-
-## API Endpoints
-
-### Authentication (`/api/v1/auth`)
-- `POST /register` - User registration
-- `POST /verify-email` - Email verification
-- `POST /login` - User login
-- `POST /refresh` - Refresh access token
-- `POST /logout` - User logout
-- `POST /forgot-password` - Request password reset
-- `POST /reset-password` - Reset password
-- `POST /enable-2fa` - Enable 2FA
-- `POST /verify-2fa` - Verify 2FA code
-- `POST /disable-2fa` - Disable 2FA
-- `GET /google` - Google OAuth login
-- `GET /google/callback` - Google OAuth callback
-- `GET /me` - Get current user info
-
-### User Management (`/api/v1/user`)
-- `GET /` - Get user profile
-- `PUT /` - Update user profile
-- `DELETE /` - Delete user account
-
-### Health Check
-- `GET /health` - Application health check
-
-## API Response Format
-
-All API endpoints return responses in a standardized JSON format:
-
-### Success Response
-```json
-{
-  "success": true,
-  "message": "Operation completed successfully",
-  "data": { ... },
-  "error": null
-}
-```
-
-### Error Response
-```json
-{
-  "success": false,
-  "message": "Error description",
-  "data": null,
-  "error": {
-    "code": "ERROR_CODE"
-  }
-}
-```
-
-### Paginated Response
-For endpoints that return lists of items, the `data` field contains pagination metadata:
-```json
-{
-  "success": true,
-  "message": "Items retrieved successfully",
-  "data": {
-    "items": [ ... ],
-    "total": 100,
-    "page": 1,
-    "limit": 10,
-    "totalPages": 10
-  },
-  "error": null
-}
-```
+| Command | Description |
+| :--- | :--- |
+| `bun run dev` | Start development server with hot reload |
+| `bun run build` | Compile TypeScript to `dist/` |
+| `bun run start` | Run production bundle from `dist/` |
+| `bun run lint` | Run ESLint check |
+| `bun run prisma:push` | Sync Prisma schema with database |
+| `bun run prisma:generate` | Generate Prisma client types |
 
 ## Project Structure
 
-```
+The project follows a **Feature-based Subdomain Architecture**:
+
+```text
 src/
-├── config/          # Environment and database configuration
+├── config/          # env.ts (Zod), db.ts (Prisma singleton)
 ├── features/
-│   ├── auth/        # Authentication module
-│   │   ├── auth.routes.ts
-│   │   ├── auth.controller.ts
-│   │   ├── auth.service.ts
-│   │   ├── auth.repository.ts
-│   │   ├── auth.schema.ts
-│   │   └── auth.types.ts
-│   └── user/         # User management module
-├── lib/             # Utility libraries (JWT, password, mail, OTP)
-├── shared/
-│   ├── middleware/  # Express middlewares
-│   ├── types/       # Shared TypeScript types
-│   └── utils/       # Utility functions
-└── server.ts        # Application entry point
+│   ├── auth/        # Registration, Login, OAuth, 2FA, Sessions
+│   ├── user/        # Personal profile management
+│   ├── admin/       # User management & dashboard stats (Admin Only)
+│   ├── payment/     # Checkout, Subscriptions, Webhooks (Midtrans/Stripe)
+│   └── content/     # Exclusive/Premium content delivery
+├── lib/             # Third-party wrappers (JWT, Mail, OTP, Stripe, etc.)
+├── shared/          # Middlewares, types, and logging utilities
+└── server.ts        # Entry point
 ```
 
-## Security Features
+## API Overview
 
-- **Hybrid Token Strategy**: Access tokens in JSON body, refresh tokens in HTTP-only cookies
-- **Token Rotation**: Refresh tokens are rotated on each use
-- **Global Revocation**: `tokenVersion` for instant session invalidation
-- **Specific Revocation**: Individual refresh token revocation
-- **Password Security**: bcryptjs hashing with salt rounds
-- **Input Validation**: Zod schemas for all request data
-- **CORS Protection**: Configured CORS policies
+### Authentication (`/api/v1/auth`)
+- `POST /register` - Register new account
+- `POST /login` - Local authentication
+- `POST /refresh` - Rotate access/refresh tokens
+- `POST /logout` - Revoke current session
+- `GET /google` - Initiate Google OAuth
+- `POST /forgot-password` / `POST /reset-password` - Account recovery
+- `POST /enable-2fa` / `POST /confirm-2fa` - TOTP Setup
 
-## Contributing
+### Payments & Premium (`/api/v1/payment`)
+- `POST /checkout` - Create payment session (Premium upgrade)
+- `POST /cancel` - Cancel subscription (grace period applies)
+- `POST /webhook` - Midtrans callback (Secured)
+- `POST /webhook-stripe` - Stripe callback (Secured)
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Commit your changes: `git commit -am 'Add feature'`
-4. Push to the branch: `git push origin feature-name`
-5. Submit a pull request
+### Administration (`/api/v1/admin`)
+- `GET /users` - Paginated user list with search
+- `PATCH /users/:id/role` - Update user role (RBAC)
+- `GET /stats` - Dashboard metrics
+
+## Security Standards
+
+- **Zero-Trust Input**: Strict Zod validation for all incoming requests.
+- **ACID Transactions**: Prisma interactive transactions for all critical operations.
+- **Anti-Abuse**: Tiered rate limiting protecting Auth and Payment endpoints.
+- **Idempotency**: Webhook handlers ensure payments are processed exactly once.
+- **Global Revocation**: `tokenVersion` mechanism allows instant logout from all devices.
 
 ## License
 
-MIT License - see the LICENSE file for details..
+MIT License. See `LICENSE` for more information.
